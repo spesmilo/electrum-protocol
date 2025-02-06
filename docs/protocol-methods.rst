@@ -76,7 +76,7 @@ With *cp_height* 8::
 blockchain.block.headers
 ========================
 
-Return a concatenated chunk of block headers from the main chain.
+Return a chunk of block headers from the main chain.
 
 **Signature**
 
@@ -85,6 +85,8 @@ Return a concatenated chunk of block headers from the main chain.
   .. versionchanged:: 1.4
      *cp_height* parameter added
   .. versionchanged:: 1.4.1
+  .. versionchanged:: 1.6
+     response contains *headers* field instead of *hex*
 
   *start_height*
 
@@ -106,17 +108,16 @@ Return a concatenated chunk of block headers from the main chain.
   A dictionary with the following members:
 
   * *count*
-
     The number of headers returned, between zero and the number
     requested.  If the chain has not extended sufficiently far, only
     the available headers will be returned.  If more headers than
     *max* were requested at most *max* will be returned.
 
-  * *hex*
+  * *headers*
 
-    The binary block headers concatenated together in-order as a
-    hexadecimal string.  Starting with version 1.4.1, AuxPoW data (if present
-    in the original header) is truncated if *cp_height* is nonzero.
+    An array containing the binary block headers in-order; each header is a
+    hexadecimal string.  AuxPoW data (if present in the original header) is
+    truncated if *cp_height* is nonzero.
 
   * *max*
 
@@ -149,7 +150,11 @@ See :ref:`here <cp_height example>` for an example of *root* and
 
   {
     "count": 2,
-    "hex": "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e36299"
+    "headers":
+    [
+      "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c",
+      "010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e36299"
+    ],
     "max": 2016
   }
 
@@ -161,11 +166,20 @@ be confirmed within a certain number of blocks.
 
 **Signature**
 
-  .. function:: blockchain.estimatefee(number)
+  .. function:: blockchain.estimatefee(number, mode=None)
+  .. versionchanged:: 1.6
+     *mode* argument added
 
   *number*
 
     The number of blocks to target for confirmation.
+
+  *mode*
+
+    A string to pass to the bitcoind *estimatesmartfee* RPC as the
+    *estimate_mode* parameter. Optional. If omitted, the corresponding
+    parameter to the bitcoind RPC is also omitted, i.e. the default
+    value is determined by bitcoind.
 
 **Result**
 
@@ -359,6 +373,8 @@ hashes>`.
 
   .. function:: blockchain.scripthash.get_mempool(scripthash)
   .. versionadded:: 1.1
+  .. versionchanged:: 1.6
+     results must be sorted (previously undefined order)
 
   *scripthash*
 
@@ -366,8 +382,9 @@ hashes>`.
 
 **Result**
 
-  A list of mempool transactions in arbitrary order.  Each mempool
-  transaction is a dictionary with the following keys:
+  A list of mempool transactions. The order is the same as when computing the
+  :ref:`status <status>` of the script hash.
+  Each mempool transaction is a dictionary with the following keys:
 
   * *height*
 
@@ -514,6 +531,190 @@ Unsubscribe from a script hash, preventing future notifications if its :ref:`sta
   Note that :const:`False` might be returned even for something subscribed to earlier,
   because the server can drop subscriptions in rare circumstances.
 
+blockchain.outpoint.subscribe
+=============================
+
+Subscribe to a transaction outpoint (TXO), to get notifications about its status.
+A status involves up to two transactions: the funding transaction that creates
+the TXO (as one of its outputs), and the spending transaction that uses it
+as an input (spends it).
+
+**Signature**
+
+  .. function:: blockchain.outpoint.subscribe(tx_hash, txout_idx, spk_hint=None)
+  .. versionadded:: 1.6
+
+  *tx_hash*
+
+    The TXID of the funding transaction as a hexadecimal string.
+    (sometimes called prevout_hash, in inputs)
+
+  *txout_idx*
+
+    The output index, a non-negative integer. (sometimes called prevout_n, in inputs)
+
+  *spk_hint*
+
+    The scriptPubKey (output script) corresponding to the outpoint, as a hexadecimal
+    string. This is optional, and if provided might be used by the server to find
+    the outpoint. The behaviour is undefined if an incorrect value is provided.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by including an `requires_spk_hint_for_outpoint` key
+    with value `1`.
+
+.. note::  The server MAY automatically clean up subscriptions (unsubscribe the client)
+  where the spending transaction is already deeply mined at a reorg-safe height (typically
+  100+ blocks deep).
+  Similarly, the server MAY ignore new subscription requests if the spending tx is already
+  mined at a reorg-safe height but it still MUST send at least one full response.
+
+**Result**
+
+  The status of the TXO, taking the mempool into consideration.
+  The output is a dictionary, containing 0, 1, or 3 of the following items:
+
+  * *height*
+
+    The integer height of the block the funding transaction was confirmed in.
+    If the funding transaction is in the mempool; the value is
+    ``0`` if all its inputs are confirmed, and ``-1`` otherwise.
+    This key must be present if and only if there exists a funding transaction
+    (either in the best chain or in the mempool), regardless of spentness.
+
+  * *spender_txhash*
+
+    The TXID of the spending transaction as a hexadecimal string.
+    This key is present if and only if there exists a spending transaction
+    (either in the best chain or in the mempool).
+
+  * *spender_height*
+
+    The integer height of the block the spending transaction was confirmed in.
+    If the spending transaction is in the mempool; the value is
+    ``0`` if all its inputs are confirmed, and ``-1`` otherwise.
+    This key is present if and only if the *spender_txhash* key is present.
+
+**Result Examples**
+
+::
+
+  {}
+
+::
+
+  {
+    "height": 1866594
+  }
+
+::
+
+  {
+    "height": 1866594,
+    "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
+    "spender_height": 0
+  }
+
+**Notifications**
+
+  The client will receive a notification when the `status` of the outpoint changes.
+  That is, any event that changes any field of the `status` dictionary results in a
+  notification. Some examples:
+
+  * a funding/spending tx appearing in the mempool if there was no such tx when the client subbed
+    (note: the server MUST save the subscription even if the outpoint does not exist yet)
+  * funding/spending tx height changing from -1 to 0 as its inputs got mined
+  * funding/spending tx height changing from 0 to a (positive) block height when it gets mined
+  * note that reorgs can change any of the `status` fields and result in notifications
+  * note that mempool replacement (e.g. due to RBF) or mempool eviction (and potentially other
+    mempool quirks) can also change some of the `status` fields and hence result in notifications
+
+  The client MAY receive a notification even if the status did not change
+  (when e.g. there was a reorg changing the blockhash the tx is mined in but not the height).
+
+  The signature of the notification is
+
+    .. function:: blockchain.outpoint.subscribe([tx_hash, txout_idx], status)
+       :noindex:
+
+**Full JSON-RPC Example**
+
+Here is an example where the client sends a request, gets an immediate response,
+and then at some point later - while the connection is still open -
+receives a notification.
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "blockchain.outpoint.subscribe",
+    "params": ["1872b27abc497492a775fe335abfe368af575733144a7ecd4b249d8fd885b3cf", 1]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"height": 1866594},
+    "id": 4
+  }
+
+  # notification after broadcasting tx 4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09
+  <- {
+    "jsonrpc": "2.0",
+    "method": "blockchain.outpoint.subscribe",
+    "params": [
+      ["1872b27abc497492a775fe335abfe368af575733144a7ecd4b249d8fd885b3cf", 1],
+      {
+        "height": 1866594,
+        "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
+        "spender_height": 0
+      }
+    ]
+  }
+
+
+blockchain.outpoint.get_status
+==============================
+
+Get the status of a transaction outpoint (TXO).
+Same as :func:`blockchain.outpoint.subscribe`, but without subscribing to future changes of status
+(i.e. no subsequent notifications).
+
+**Signature**
+
+  .. function:: blockchain.outpoint.get_status(tx_hash, txout_idx, spk_hint=None)
+  .. versionadded:: 1.6
+
+  (same as :func:`blockchain.outpoint.subscribe`)
+
+**Result**
+
+  (same as :func:`blockchain.outpoint.subscribe`)
+
+blockchain.outpoint.unsubscribe
+===============================
+
+Unsubscribe from a transaction outpoint (TXO), preventing future notifications
+if its `status` changes.
+
+**Signature**
+
+  .. function:: blockchain.outpoint.unsubscribe(tx_hash, txout_idx)
+  .. versionadded:: 1.6
+
+  *tx_hash*
+
+    The TXID of the funding transaction as a hexadecimal string.
+
+  *txout_idx*
+
+    The output index, a non-negative integer.
+
+**Result**
+
+  Returns :const:`True` if the outpoint was subscribed to, otherwise :const:`False`.
+  Note that :const:`False` might be returned even for something subscribed to earlier,
+  because the server can drop subscriptions in rare circumstances.
+
 blockchain.transaction.broadcast
 ================================
 
@@ -640,7 +841,9 @@ and height.
 
 **Signature**
 
-  .. function:: blockchain.transaction.get_merkle(tx_hash, height)
+  .. function:: blockchain.transaction.get_merkle(tx_hash, height=None)
+  .. versionchanged:: 1.6
+     *height* argument made optional (previously mandatory)
 
   *tx_hash*
 
@@ -648,7 +851,8 @@ and height.
 
   *height*
 
-    The height at which it was confirmed, an integer.
+    Optionally, the height at which it was confirmed, an integer.
+    Clients are encouraged to provide this field when they can, to reduce server load.
 
 **Result**
 
@@ -991,6 +1195,7 @@ server.version
 ==============
 
 Identify the client to the server and negotiate the protocol version.
+This must be the first message sent on the wire.
 Only the first :func:`server.version` message is accepted.
 
 **Signature**
