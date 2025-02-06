@@ -435,9 +435,12 @@ Return an ordered list of UTXOs sent to a script hash.
 **Warning**
 
   In the case of pre-segwit legacy UTXOs, the satoshi value claimed by a server should be
-  verified by the client by requesting the funding transaction and SPV-verifying it.
-  The pre-segwit legacy sighash does not commit to the input amount, so without the SPV check,
-  the server can try to trick a client into burning their coins as fees.
+  verified by the client by requesting the full funding transaction and parsing it
+  to look for the output amount corresponding to ``tx_hash:tx_pos``.
+  This is necessary as the pre-segwit legacy sighash does not commit to the input amount, so
+  the server could try to trick a client into burning their coins as fees.
+  Note that it is not necessary to SPV-verify ``tx_hash``, as the sighash commits to the txid,
+  and the txid commits to the raw tx, from which we read out the satoshi amount.
 
 
 **Result Example**
