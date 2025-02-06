@@ -569,6 +569,92 @@ Protocol version 1.0 returning an error as the result:
 
   "258: txn-mempool-conflict"
 
+blockchain.transaction.broadcast_package
+========================================
+
+Broadcast a package of transactions to the network (submitpackage). The package must consist of a child with its parents,
+and none of the parents may depend on one another. The package must be topologically sorted,
+with the child being the last element in the array.
+
+**Signature**
+
+  .. function:: blockchain.transaction.broadcast_package(raw_txs, verbose=false)
+
+  *raw_txs*
+
+    An array of raw transactions, each as a hexadecimal string.
+
+  *verbose*
+
+    Whether a verbose coin-specific response is required.
+
+**Result**
+
+  If *verbose* is :const:`false`:
+
+    A dictionary with the following keys:
+
+    * `success`
+        * Type: bool
+        * Value: Indicating the result of the package submission
+    * `errors`
+        * Type: Optional[List[Dict]]
+        * Value: Error message and txid (NOT wtxid) of transactions that were not accepted
+
+  If *verbose* is :const:`true`:
+
+    The bitcoind response according to its RPC API documentation.
+    Note that the exact structure and semantics can depend on the bitcoind version,
+    and hence the electrum protocol can make no guarantees about it.
+
+**Result Example**
+
+When *verbose* is :const:`false`::
+
+    {
+      "success": true
+    }
+
+    With errors:
+
+    {
+      "success": false,
+      "errors":
+      [
+        {
+          "txid": "ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659",
+          "error": "bad-txns-inputs-missingorspent"
+        }
+      ]
+    }
+
+When *verbose* is :const:`true`::
+
+    {                                   (json object)
+      "package_msg" : "str",            (string) The transaction package result message. "success" indicates all transactions were accepted into or are already in the mempool.
+      "tx-results" : {                  (json object) transaction results keyed by wtxid
+        "wtxid" : {                     (json object) transaction wtxid
+          "txid" : "hex",               (string) The transaction hash in hex
+          "other-wtxid" : "hex",        (string, optional) The wtxid of a different transaction with the same txid but different witness found in the mempool. This means the submitted transaction was ignored.
+          "vsize" : n,                  (numeric, optional) Sigops-adjusted virtual transaction size.
+          "fees" : {                    (json object, optional) Transaction fees
+            "base" : n,                 (numeric) transaction fee in BTC
+            "effective-feerate" : n,    (numeric, optional) if the transaction was not already in the mempool, the effective feerate in BTC per KvB. For example, the package feerate and/or feerate with modified fees from prioritisetransaction.
+            "effective-includes" : [    (json array, optional) if effective-feerate is provided, the wtxids of the transactions whose fees and vsizes are included in effective-feerate.
+              "hex",                    (string) transaction wtxid in hex
+              ...
+            ]
+          },
+          "error" : "str"               (string, optional) The transaction error string, if it was rejected by the mempool
+        },
+        ...
+      },
+      "replaced-transactions" : [       (json array, optional) List of txids of replaced transactions
+        "hex",                          (string) The transaction id
+        ...
+      ]
+    }
+
 blockchain.transaction.get
 ==========================
 

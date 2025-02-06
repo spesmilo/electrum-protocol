@@ -202,3 +202,8 @@ Changes
   * Optional *mode* argument added to :func:`blockchain.estimatefee`.
   * :func:`blockchain.block.headers` now returns headers as a list,
     instead of a single concatenated hex string.
+
+New methods
+-----------
+
+  * :func:`blockchain.transaction.broadcast_package` to broadcast a package of transactions (submitpackage).
