@@ -431,6 +431,15 @@ Return an ordered list of UTXOs sent to a script hash.
 
     The output's value in minimum coin units (satoshis).
 
+
+**Warning**
+
+  In the case of pre-segwit legacy UTXOs, the satoshi value claimed by a server should be
+  verified by the client by requesting the funding transaction and SPV-verifying it.
+  The pre-segwit legacy sighash does not commit to the input amount, so without the SPV check,
+  the server can try to trick a client into burning their coins as fees.
+
+
 **Result Example**
 
 ::
