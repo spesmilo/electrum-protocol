@@ -2,7 +2,7 @@
 Protocol Changes
 ================
 
-This documents lists changes made by protocol version.
+This document lists changes made by protocol version.
 
 Version 1.0
 ===========
@@ -175,3 +175,30 @@ New methods
 -----------
 
   * :func:`blockchain.name.get_value_proof` to resolve a name (with proof).  Name index coins (e.g. Namecoin) only.
+
+
+Version 1.5
+===========
+
+(this version number was skipped, no corresponding protocol is defined)
+
+
+.. _version 1.6:
+
+Version 1.6
+===========
+
+Changes
+-------
+
+  * Breaking change for the version negotiation: we now mandate that
+    the :func:`server.version` message must be the first message sent.
+    That is, version negotiation must happen before any other messages.
+  * The status of a scripthash has its definition tightened in a
+    backwards-compatible way: mempool txs now have a canonical ordering
+    defined for the calculation (previously their order was undefined).
+  * :func:`blockchain.scripthash.get_mempool` previously did not define
+    an order for mempool transactions. We now mandate a specific ordering.
+  * Optional *mode* argument added to :func:`blockchain.estimatefee`.
+  * :func:`blockchain.block.headers` now returns headers as a list,
+    instead of a single concatenated hex string.
