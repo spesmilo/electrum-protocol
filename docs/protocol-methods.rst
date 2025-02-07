@@ -193,6 +193,11 @@ be confirmed within a certain number of blocks.
 
   0.00101079
 
+.. note:: This estimate typically comes from the Bitcoin daemon, which only updates
+  its estimate when new blocks are mined. The server is free to cache this internally
+  for performance reasons, however it SHOULD avoid sending stale estimates
+  by e.g. invalidating the cache before notifying clients of a new block header.
+
 
 blockchain.headers.subscribe
 ============================
