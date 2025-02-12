@@ -560,7 +560,15 @@ with the child being the last element in the array.
 
   If *verbose* is :const:`false`:
 
-    The package_msg and replaced_txs, a list of txids of replaced transactions.
+    * `success`
+        * Type: bool
+        * Value: Indicating the result of the package submission
+    * `replaced_txs`
+        * Type: Optional[List[str]]
+        * Value: Txids of replaced transactions
+    * `errors`
+        * Type: Optional[List[Dict]]
+        * Value: Error message and txid of transactions that were not accepted
 
   If *verbose* is :const:`true`:
 
@@ -571,8 +579,21 @@ with the child being the last element in the array.
 When *verbose* is :const:`false`::
 
     {
-      "package_msg": "success",
-      "replaced_txs": []
+      "success": True,
+      "replaced_txs": ["ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659"],
+    }
+
+    With errors:
+
+    {
+      "success": False,
+      "errors":
+      [
+        {
+          "txid": "ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659",
+          "error": "bad-txns-inputs-missingorspent"
+        }
+      ]
     }
 
 When *verbose* is :const:`true`::
