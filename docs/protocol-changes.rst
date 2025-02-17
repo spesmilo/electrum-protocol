@@ -204,6 +204,13 @@ Changes
   * Optional *mode* argument added to :func:`blockchain.estimatefee`.
   * :func:`blockchain.block.headers` now returns headers as a list,
     instead of a single concatenated hex string.
+  * Support for *cp_height* in :func:`blockchain.block.header` and
+    :func:`blockchain.block.headers` has been made optional.
+  * Support for :const:`verbose=true` in :func:`blockchain.transaction.get`
+    has been made optional.
+  * :func:`server.features` now has a new mandatory field, *method_flavours*,
+    which aims to provide some clarity re whether the server supports optional features.
+
 
 New methods
 -----------
