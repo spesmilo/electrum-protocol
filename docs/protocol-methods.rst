@@ -1305,18 +1305,104 @@ subscription and the server must send no notifications.
 server.ping
 ===========
 
-Ping the server to ensure it is responding, and to keep the session
+Ping the remote to ensure it is responding, and to keep the session
 alive.  The server may disconnect clients that have sent no requests
 for roughly 10 minutes.
 
+Besides keeping the TCP connection alive, this can also be used
+to obfuscate traffic patterns.
+
+  **Note** This method is special, in that it is symmetric: both the client and
+  the server are allowed to send it, and both MUST support receiving it
+  and responding to it.
+
 **Signature**
 
-  .. function:: server.ping()
+  .. function:: server.ping(pong_len=0, data="")
   .. versionadded:: 1.2
+  .. versionchanged:: 1.6
+     both parties are now allowed to send this
+     and significant changes to signature/fields
+
+  * *pong_len*
+
+    The number of hex characters the other party should send in the *data* part of the response.
+    A non-negative integer, or :const:`-1`.
+    A value of :const:`-1` means the other party is asked not to respond. (This can be useful
+    against traffic analysis)
+
+  * *data*
+
+    A hexadecimal string. Its value is to be ignored by the recipient.
 
 **Result**
 
-  Returns :const:`null`.
+  A dictionary with the following keys:
+
+  * *data*
+
+    A hexadecimal string. Its value is to be ignored by the recipient.
+    However, the length MUST match the *pong_len* that was requested.
+
+
+**Note** Both *data* fields should support reasonably long strings, at least as long as
+would be needed to encode the largest consensus-valid transaction. No limits here
+would mean an easy DOS-vector and waste of bandwidth using *pong_len*. The client could
+already send or request transactions using other protocol methods, so limiting below that
+does not make sense.
+
+**Full JSON-RPC Examples**
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "server.ping",
+    "params": [0, "deadbeefdeadbeefdeadbeefdeadbeef"]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"data": ""},
+    "id": 4
+  }
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "server.ping",
+    "params": [5]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"data": "00000"},
+    "id": 4
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "id": 7,
+    "method": "server.ping",
+    "params": [14, "0000000000000000000000000000000000000000000000000000000000000000"]
+  }
+  -> {
+    "jsonrpc": "2.0",
+    "result": {"data": "deadbeefdeadbe"},
+    "id": 7
+  }
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "server.ping",
+    "params": [-1, "deadbeefdeadbeefdeadbeefdeadbeef"]
+  }
+  (no response)
+
+
 
 server.version
 ==============

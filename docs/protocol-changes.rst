@@ -210,6 +210,8 @@ Changes
     has been made optional.
   * :func:`server.features` now has a new mandatory field, *method_flavours*,
     which aims to provide some clarity re whether the server supports optional features.
+  * :func:`server.ping` can now be sent by both the client and the server, and both
+    parties must handle and respond to it. The request/response signature also changed.
 
 
 New methods
