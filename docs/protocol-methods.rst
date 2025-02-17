@@ -546,11 +546,11 @@ with the child being the last element in the array.
 
 **Signature**
 
-  .. function:: blockchain.transaction.broadcast_package([raw_txs]; verbose=false)
+  .. function:: blockchain.transaction.broadcast_package(raw_txs, verbose=false)
 
-  *[raw_txs]*
+  *raw_txs*
 
-    An array of raw transactions as hexadecimal strings.
+    An array of raw transactions, each as a hexadecimal string.
 
   *verbose*
 
@@ -573,20 +573,22 @@ with the child being the last element in the array.
   If *verbose* is :const:`true`:
 
     The Bitcoin Core daemon result according to its RPC API documentation.
+    Note that the exact structure and semantics can depend on the bitcoind version,
+    and hence the electrum protocol can make no guarantees about it.
 
 **Result Example**
 
 When *verbose* is :const:`false`::
 
     {
-      "success": True,
+      "success": true,
       "replaced_txs": ["ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659"],
     }
 
     With errors:
 
     {
-      "success": False,
+      "success": false,
       "errors":
       [
         {
