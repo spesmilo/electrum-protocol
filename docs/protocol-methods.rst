@@ -14,6 +14,8 @@ Return the block header at the given height.
   .. versionchanged:: 1.4
      *cp_height* parameter added
   .. versionchanged:: 1.4.1
+  .. versionchanged:: 1.6
+     *cp_height* support made optional
 
   *height*
 
@@ -25,6 +27,10 @@ Return the block header at the given height.
     otherwise the following must hold:
 
       *height* <= *cp_height*
+
+    The server CAN decide not to support a non-zero cp_height value, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.block.header"]["supports_cp_height"]=false`.
 
 **Result**
 
@@ -87,6 +93,7 @@ Return a chunk of block headers from the main chain.
   .. versionchanged:: 1.4.1
   .. versionchanged:: 1.6
      response contains *headers* field instead of *hex*
+     *cp_height* support made optional
 
   *start_height*
 
@@ -102,6 +109,11 @@ Return a chunk of block headers from the main chain.
     otherwise the following must hold:
 
       *start_height* + (*count* - 1) <= *cp_height*
+
+    The server CAN decide not to support a non-zero cp_height value, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.block.header"]["supports_cp_height"]=false`.
+    (the flavour key `"blockchain.block.header"` is reused with the other header method).
 
 **Result**
 
@@ -565,8 +577,8 @@ as an input (spends it).
     the outpoint. The behaviour is undefined if an incorrect value is provided.
     The server (especially lighter ones such as EPS/BWT) might require this parameter
     to be able to serve the request, in which case the server must indicate so in its
-    :func:`server.features` response, by including an `requires_spk_hint_for_outpoint` key
-    with value `1`.
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.outpoint.subscribe"]["requires_spk_hint"]=true`.
 
 .. note::  The server MAY automatically clean up subscriptions (unsubscribe the client)
   where the spending transaction is already deeply mined at a reorg-safe height (typically
@@ -775,7 +787,7 @@ with the child being the last element in the array.
 
   *verbose*
 
-    Whether a verbose coin-specific response is required.
+    Whether the verbose bitcoind response is required.
 
 **Result**
 
@@ -856,6 +868,8 @@ Return a raw transaction.
      ignored argument *height* removed
   .. versionchanged:: 1.2
      *verbose* argument added
+  .. versionchanged:: 1.6
+     support of *verbose=true* made optional
 
   *tx_hash*
 
@@ -864,6 +878,10 @@ Return a raw transaction.
   *verbose*
 
     Whether the verbose bitcoind response is required.
+    The server MUST support the verbose=false option (which is the default).
+    The server CAN decide not to support the verbose=true option, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.transaction.get"]["supports_verbose_true"]=false`.
 
 **Result**
 
@@ -1162,6 +1180,8 @@ Return a list of features and services supported by the server.
 **Signature**
 
   .. function:: server.features()
+  .. versionchanged:: 1.6
+     added *method_flavours* field to result
 
 **Result**
 
@@ -1223,6 +1243,18 @@ Return a list of features and services supported by the server.
     there is no pruning limit.  Should be the same as what would
     suffix the letter ``p`` in the IRC real name.
 
+  * *method_flavours*
+
+    A dictionary that describes whether optional features of certain protocol methods
+    are supported by the server. The server might also require an otherwise optional
+    argument to be set by the client, that too should be clearly advertised here.
+    The keys are protocol method name strings, and the values are dictionaries
+    that are specific to the given protocol method.
+
+    If a server supports all functionality defined for the negotiated protocol version,
+    it can just set this to the empty dict (but the `method_flavours` key itself
+    must always be present).
+
 **Example Result**
 
 ::
@@ -1234,7 +1266,11 @@ Return a list of features and services supported by the server.
       "protocol_min": "1.0",
       "pruning": null,
       "server_version": "ElectrumX 1.0.17",
-      "hash_function": "sha256"
+      "hash_function": "sha256",
+      "method_flavours": {
+          "blockchain.outpoint.subscribe": {"requires_spk_hint": true},
+          "blockchain.transaction.get": {"supports_verbose_true": false}
+      }
   }
 
 
