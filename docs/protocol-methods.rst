@@ -554,21 +554,20 @@ with the child being the last element in the array.
 
   *verbose*
 
-    Whether a verbose coin-specific response is required.
+    Whether the verbose bitcoind response is required.
 
 **Result**
 
   If *verbose* is :const:`false`:
 
+    A dictionary with the following keys:
+
     * `success`
         * Type: bool
         * Value: Indicating the result of the package submission
-    * `replaced_txs`
-        * Type: Optional[List[str]]
-        * Value: Txids of replaced transactions
     * `errors`
         * Type: Optional[List[Dict]]
-        * Value: Error message and txid of transactions that were not accepted
+        * Value: Error message and txid (NOT wtxid) of transactions that were not accepted
 
   If *verbose* is :const:`true`:
 
@@ -581,8 +580,7 @@ with the child being the last element in the array.
 When *verbose* is :const:`false`::
 
     {
-      "success": true,
-      "replaced_txs": ["ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659"],
+      "success": true
     }
 
     With errors:
