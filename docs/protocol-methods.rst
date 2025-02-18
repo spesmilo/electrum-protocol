@@ -52,7 +52,7 @@ Return the block header at the given height.
 
 **Example Result**
 
-With *height* 5 and *cp_height* 0 on the Bitcoin Cash chain:
+With *height* 5 and *cp_height* 0 on the Bitcoin chain:
 
 ::
 
@@ -169,7 +169,7 @@ be confirmed within a certain number of blocks.
 
 **Result**
 
-  The estimated transaction fee in coin units per kilobyte, as a
+  The estimated transaction fee in whole coin units per kilobyte, as a
   floating point number.  If the daemon does not have enough
   information to make an estimate, the integer ``-1`` is returned.
 
@@ -246,7 +246,7 @@ be accepted to the daemon's memory pool.
 
 **Result**
 
-  The fee in whole coin units (BTC, not satoshis for Bitcoin) as a
+  The fee in whole coin units (BTC, not satoshis) as a
   floating point number.
 
 **Example Results**
@@ -568,7 +568,7 @@ Return a raw transaction.
 
   *verbose*
 
-    Whether a verbose coin-specific response is required.
+    Whether the verbose bitcoind response is required.
 
 **Result**
 
@@ -578,9 +578,8 @@ Return a raw transaction.
 
     If *verbose* is :const:`true`:
 
-       The result is a coin-specific dictionary -- whatever the coin
-       daemon returns when asked for a verbose form of the raw
-       transaction.
+       The result is a bitcoind-specific dictionary -- whatever bitcoind
+       returns when asked for a verbose form of the raw transaction.
 
 **Example Results**
 

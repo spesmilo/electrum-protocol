@@ -6,6 +6,10 @@ Protocol Ideas
           not implemented and it is likely they will change and that protocol 2.0 will be
           quite different.
 
+.. note:: This doc is not kept up-to-date, and does not reflect the current thinking of what
+          future protocol versions will look like. Several newer related and unrelated ideas
+          are not listed here.
+
 This protocol version makes changes intended to allow clients and servers to more easily
 scale to support queries about busy addresses.  It has changes to reduce the amount of
 round-trip queries made in common usage, and to make results more compact to reduce
