@@ -194,7 +194,9 @@ Changes
   * Breaking change for the version negotiation: we now mandate that
     the :func:`server.version` message must be the first message sent.
     That is, version negotiation must happen before any other messages.
-  * The status of a scripthash has its definition tightened in a
+  * The `blockchain.scripthash.*` methods are all replaced with `blockchain.scriptpubkey.*`
+    methods. Note: `sha256(scriptPubKey) == scripthash`.
+  * The status of a scripthash/scriptpubkey has its definition tightened in a
     backwards-compatible way: mempool txs now have a canonical ordering
     defined for the calculation (previously their order was undefined).
   * :func:`blockchain.scripthash.get_mempool` previously did not define
@@ -218,8 +220,24 @@ Changes
 New methods
 -----------
 
+  * :func:`blockchain.scriptpubkey.get_balance`
+  * :func:`blockchain.scriptpubkey.get_history`
+  * :func:`blockchain.scriptpubkey.get_mempool`
+  * :func:`blockchain.scriptpubkey.listunspent`
+  * :func:`blockchain.scriptpubkey.subscribe`
+  * :func:`blockchain.scriptpubkey.unsubscribe`
   * :func:`blockchain.outpoint.subscribe` to subscribe to a transaction
     outpoint, and get a notification when it gets spent.
   * :func:`blockchain.outpoint.unsubscribe` to unsubscribe from a TXO.
   * :func:`blockchain.outpoint.get_status` to get current status of a TXO, without subscribing to changes.
   * :func:`blockchain.transaction.broadcast_package` to broadcast a package of transactions (submitpackage).
+
+Removed methods
+---------------
+
+  * :func:`blockchain.scripthash.get_balance`
+  * :func:`blockchain.scripthash.get_history`
+  * :func:`blockchain.scripthash.get_mempool`
+  * :func:`blockchain.scripthash.listunspent`
+  * :func:`blockchain.scripthash.subscribe`
+  * :func:`blockchain.scripthash.unsubscribe`
