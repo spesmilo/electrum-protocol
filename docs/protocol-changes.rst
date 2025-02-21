@@ -199,8 +199,9 @@ Changes
     defined for the calculation (previously their order was undefined).
   * :func:`blockchain.scripthash.get_mempool` previously did not define
     an order for mempool transactions. We now mandate a specific ordering.
-  * The previously required *height* argument for
-    :func:`blockchain.transaction.get_merkle` is now optional.
+  * For :func:`blockchain.transaction.get_merkle`, the previously required
+    *height* argument is now optional, and the result now includes a
+    *block_hash* field.
   * Optional *mode* argument added to :func:`blockchain.estimatefee`.
   * :func:`blockchain.block.headers` now returns headers as a list,
     instead of a single concatenated hex string.
