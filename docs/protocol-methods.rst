@@ -278,6 +278,9 @@ Return the confirmed and unconfirmed balances of a :ref:`script hash
 
   A dictionary with keys `confirmed` and `unconfirmed`.  The value of
   each is the appropriate balance in minimum coin units (satoshis).
+  The `confirmed` balance is the sum of UTXO values at the current chaintip.
+  The value for `unconfirmed` is the mempool delta (compared to `confirmed`),
+  so note that it can also be negative.
 
 **Result Example**
 
