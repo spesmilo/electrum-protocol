@@ -290,20 +290,19 @@ be accepted to the daemon's memory pool.
 
    0.0
 
-blockchain.scripthash.get_balance
-=================================
+blockchain.scriptpubkey.get_balance
+===================================
 
-Return the confirmed and unconfirmed balances of a :ref:`script hash
-<script hashes>`.
+Return the confirmed and unconfirmed balances of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_balance(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.get_balance(scriptpubkey)
+  .. versionadded:: 1.6
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
@@ -322,25 +321,24 @@ Return the confirmed and unconfirmed balances of a :ref:`script hash
     "unconfirmed": 23684400
   }
 
-blockchain.scripthash.get_history
-=================================
+blockchain.scriptpubkey.get_history
+===================================
 
-Return the confirmed and unconfirmed history of a :ref:`script hash
-<script hashes>`.
+Return the confirmed and unconfirmed history of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_history(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.get_history(scriptpubkey)
+  .. versionadded:: 1.6
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
   A list of confirmed transactions in blockchain order, with the
-  output of :func:`blockchain.scripthash.get_mempool` appended to the
+  output of :func:`blockchain.scriptpubkey.get_mempool` appended to the
   list.  Each confirmed transaction is a dictionary with the following
   keys:
 
@@ -352,7 +350,7 @@ Return the confirmed and unconfirmed history of a :ref:`script hash
 
     The transaction hash in hexadecimal.
 
-  See :func:`blockchain.scripthash.get_mempool` for how mempool
+  See :func:`blockchain.scriptpubkey.get_mempool` for how mempool
   transactions are returned.
 
 **Result Examples**
@@ -380,27 +378,26 @@ Return the confirmed and unconfirmed history of a :ref:`script hash
     }
   ]
 
-blockchain.scripthash.get_mempool
-=================================
+blockchain.scriptpubkey.get_mempool
+===================================
 
-Return the unconfirmed transactions of a :ref:`script hash <script
-hashes>`.
+Return the unconfirmed transactions of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_mempool(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.get_mempool(scriptpubkey)
+  .. versionadded:: 1.6
   .. versionchanged:: 1.6
      results must be sorted (previously undefined order)
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
   A list of mempool transactions. The order is the same as when computing the
-  :ref:`status <status>` of the script hash.
+  :ref:`status <status>` of the scriptPubKey.
   Each mempool transaction is a dictionary with the following keys:
 
   * *height*
@@ -428,19 +425,19 @@ hashes>`.
   ]
 
 
-blockchain.scripthash.listunspent
-=================================
+blockchain.scriptpubkey.listunspent
+===================================
 
-Return an ordered list of UTXOs sent to a script hash.
+Return an ordered list of UTXOs sent to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.listunspent(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.listunspent(scriptpubkey)
+  .. versionadded:: 1.6
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
@@ -501,50 +498,59 @@ Return an ordered list of UTXOs sent to a script hash.
 
 .. _subscribed:
 
-blockchain.scripthash.subscribe
-===============================
+blockchain.scriptpubkey.subscribe
+=================================
 
-Subscribe to a script hash.
+Subscribe to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.subscribe(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.subscribe(scriptpubkey)
+  .. versionadded:: 1.6
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
-  The :ref:`status <status>` of the script hash.
+  The :ref:`status <status>` of the scriptPubKey.
 
 **Notifications**
 
-  The client will receive a notification when the :ref:`status <status>` of the script
-  hash changes.  Its signature is
+  The client will receive a notification when the :ref:`status <status>` of the
+  scriptPubKey changes. Importantly, the notifications use :ref:`script hash <script hashes>`
+  instead of scriptPubKey. The scripthash corresponds to the scriptPubKey from the
+  original request.
+  The client is expected to maintain a mapping scripthash->scriptpubkey, or similar,
+  to be able to figure out what the notification refers to.
+  Notably, this way servers do not have to store in memory the scriptpubkey corresponding
+  to the original request (which can be up to 10 KB in size, as per Bitcoin consensus),
+  only the scripthash (which is fixed size). Also, this limits upstream bandwidth usage
+  of servers.
+  The signature is
 
-    .. function:: blockchain.scripthash.subscribe(scripthash, status)
+    .. function:: blockchain.scriptpubkey.subscribe(scripthash, status)
        :noindex:
 
-blockchain.scripthash.unsubscribe
-=================================
+blockchain.scriptpubkey.unsubscribe
+===================================
 
-Unsubscribe from a script hash, preventing future notifications if its :ref:`status
+Unsubscribe from a scriptPubKey, preventing future notifications if its :ref:`status
 <status>` changes.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.unsubscribe(scripthash)
-  .. versionadded:: 1.4.2
+  .. function:: blockchain.scriptpubkey.unsubscribe(scriptpubkey)
+  .. versionadded:: 1.6
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
-  Returns :const:`True` if the scripthash was subscribed to, otherwise :const:`False`.
+  Returns :const:`True` if the scriptpubkey was subscribed to, otherwise :const:`False`.
   Note that :const:`False` might be returned even for something subscribed to earlier,
   because the server can drop subscriptions in rare circumstances.
 
@@ -1188,6 +1194,7 @@ Return a list of features and services supported by the server.
   .. function:: server.features()
   .. versionchanged:: 1.6
      added *method_flavours* field to result
+     removed *hash_function* field from result
 
 **Result**
 
@@ -1223,14 +1230,6 @@ Return a list of features and services supported by the server.
 
     The hash of the genesis block.  This is used to detect if a peer
     is connected to one serving a different network.
-
-  * *hash_function*
-
-    The hash function the server uses for :ref:`script hashing
-    <script hashes>`.  The client must use this function to hash
-    pay-to-scripts to produce script hashes to send to the server.
-    The default is "sha256".  "sha256" is currently the only
-    acceptable value.
 
   * *server_version*
 
@@ -1272,7 +1271,6 @@ Return a list of features and services supported by the server.
       "protocol_min": "1.0",
       "pruning": null,
       "server_version": "ElectrumX 1.0.17",
-      "hash_function": "sha256",
       "method_flavours": {
           "blockchain.outpoint.subscribe": {"requires_spk_hint": true},
           "blockchain.transaction.get": {"supports_verbose_true": false}
