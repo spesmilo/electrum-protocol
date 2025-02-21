@@ -953,6 +953,7 @@ and height.
   .. function:: blockchain.transaction.get_merkle(tx_hash, height=None)
   .. versionchanged:: 1.6
      *height* argument made optional (previously mandatory)
+     added *block_hash* field to result
 
   *tx_hash*
 
@@ -970,6 +971,10 @@ and height.
   * *block_height*
 
     The height of the block the transaction was confirmed in.
+
+  * *block_hash*
+
+    The hash of the block the transaction was confirmed in, as a hexadecimal string.
 
   * *merkle*
 
@@ -1002,6 +1007,7 @@ and height.
       "2d64851151550e8c4d337f335ee28874401d55b358a66f1bafab2c3e9f48773d"
     ],
     "block_height": 450538,
+    "block_hash": "0000000000000000029bb9b476f1c66403a151f1da007470f8b9c1d9e4b9106d",
     "pos": 710
   }
 
