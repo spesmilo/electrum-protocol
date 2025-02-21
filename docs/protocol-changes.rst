@@ -2,7 +2,7 @@
 Protocol Changes
 ================
 
-This documents lists changes made by protocol version.
+This document lists changes made by protocol version.
 
 Version 1.0
 ===========
@@ -175,3 +175,69 @@ New methods
 -----------
 
   * :func:`blockchain.name.get_value_proof` to resolve a name (with proof).  Name index coins (e.g. Namecoin) only.
+
+
+Version 1.5
+===========
+
+(this version number was skipped, no corresponding protocol is defined)
+
+
+.. _version 1.6:
+
+Version 1.6
+===========
+
+Changes
+-------
+
+  * Breaking change for the version negotiation: we now mandate that
+    the :func:`server.version` message must be the first message sent.
+    That is, version negotiation must happen before any other messages.
+  * The `blockchain.scripthash.*` methods are all replaced with `blockchain.scriptpubkey.*`
+    methods. Note: `sha256(scriptPubKey) == scripthash`.
+  * The status of a scripthash/scriptpubkey has its definition tightened in a
+    backwards-compatible way: mempool txs now have a canonical ordering
+    defined for the calculation (previously their order was undefined).
+  * :func:`blockchain.scripthash.get_mempool` previously did not define
+    an order for mempool transactions. We now mandate a specific ordering.
+  * For :func:`blockchain.transaction.get_merkle`, the previously required
+    *height* argument is now optional, and the result now includes a
+    *block_hash* field.
+  * Optional *mode* argument added to :func:`blockchain.estimatefee`.
+  * :func:`blockchain.block.headers` now returns headers as a list,
+    instead of a single concatenated hex string.
+  * Support for *cp_height* in :func:`blockchain.block.header` and
+    :func:`blockchain.block.headers` has been made optional.
+  * Support for :const:`verbose=true` in :func:`blockchain.transaction.get`
+    has been made optional.
+  * :func:`server.features` now has a new mandatory field, *method_flavours*,
+    which aims to provide some clarity re whether the server supports optional features.
+  * :func:`server.ping` can now be sent by both the client and the server, and both
+    parties must handle and respond to it. The request/response signature also changed.
+
+
+New methods
+-----------
+
+  * :func:`blockchain.scriptpubkey.get_balance`
+  * :func:`blockchain.scriptpubkey.get_history`
+  * :func:`blockchain.scriptpubkey.get_mempool`
+  * :func:`blockchain.scriptpubkey.listunspent`
+  * :func:`blockchain.scriptpubkey.subscribe`
+  * :func:`blockchain.scriptpubkey.unsubscribe`
+  * :func:`blockchain.outpoint.subscribe` to subscribe to a transaction
+    outpoint, and get a notification when it gets spent.
+  * :func:`blockchain.outpoint.unsubscribe` to unsubscribe from a TXO.
+  * :func:`blockchain.outpoint.get_status` to get current status of a TXO, without subscribing to changes.
+  * :func:`blockchain.transaction.broadcast_package` to broadcast a package of transactions (submitpackage).
+
+Removed methods
+---------------
+
+  * :func:`blockchain.scripthash.get_balance`
+  * :func:`blockchain.scripthash.get_history`
+  * :func:`blockchain.scripthash.get_mempool`
+  * :func:`blockchain.scripthash.listunspent`
+  * :func:`blockchain.scripthash.subscribe`
+  * :func:`blockchain.scripthash.unsubscribe`

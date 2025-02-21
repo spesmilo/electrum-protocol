@@ -68,25 +68,23 @@ revision number.
 
 A party to a connection will speak all protocol versions in a range,
 say from `protocol_min` to `protocol_max`, which may be the same.
-When a connection is made, both client and server must initially
-assume the protocol to use is their own `protocol_min`.
 
-The client should send a :func:`server.version` RPC call as early as
-possible in order to negotiate the precise protocol version; see its
-description for more detail.  All responses received in the stream
-from and including the server's response to this call will use its
-negotiated protocol version.
+The client must send a :func:`server.version` RPC call as the first
+message on the wire, in order to negotiate the precise protocol
+version; see its description for more detail.
+All responses received in the stream from and including the server's
+response to this call will use its negotiated protocol version.
 
 
+.. _scriptpubkeys:
 .. _script hashes:
 
 Script Hashes
 -------------
 
 A :dfn:`script hash` is the hash of the binary bytes of the locking
-script (ScriptPubKey), expressed as a hexadecimal string.  The hash
-function to use is given by the "hash_function" member of
-:func:`server.features` (currently :func:`sha256` only).  Like for
+script (scriptPubKey), expressed as a hexadecimal string.  The hash
+function to use is :func:`sha256`.  Like for
 block and transaction hashes, when converting the big-endian binary
 hash to a hexadecimal string the least-significant byte appears first,
 and the most-significant byte last.
@@ -95,7 +93,7 @@ For example, the legacy Bitcoin address from the genesis block::
 
     1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 
-has P2PKH script::
+has P2PKH script (scriptPubKey)::
 
     76a91462e907b15cbf27d5425399ebf6f0fb50ebb88f1888ac
 
@@ -103,11 +101,12 @@ with SHA256 hash::
 
     6191c3b590bfcfa0475e877c302da1e323497acf3b42c08d8fa28e364edf018b
 
-which is sent to the server reversed as::
+the scripthash is defined as the reverse of that::
 
     8b01df4e368ea28f8dc0423bcf7a4923e3a12d307c875e47a0cfbf90b5c39161
 
-By subscribing to this hash you can find P2PKH payments to that address.
+By subscribing to the scriptPubKey or the scripthash,
+you can find P2PKH payments to that address.
 
 One public key, the genesis block public key, among the trillions for
 that address is::
@@ -115,7 +114,7 @@ that address is::
     04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb
     649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f
 
-which has P2PK script::
+which has P2PK script (scriptPubKey)::
 
     4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb
     649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
@@ -124,11 +123,12 @@ with SHA256 hash::
 
     3318537dfb3135df9f3d950dbdf8a7ae68dd7c7dfef61ed17963ff80f3850474
 
-which is sent to the server reversed as::
+the scripthash is defined as the reverse of that::
 
     740485f380ff6379d11ef6fe7d7cdd68aea7f8bd0d953d9fdf3531fb7d531833
 
-By subscribing to this hash you can find P2PK payments to the genesis
+By subscribing to the scriptPubKey or the scripthash,
+you can find P2PK payments to the genesis
 block public key.
 
 .. note:: The Genesis block coinbase is uniquely unspendable and
@@ -141,26 +141,34 @@ block public key.
 Status
 ------
 
-To calculate the `status` of a :ref:`script hash <script hashes>` (or
-address):
+To calculate the `status` of a :ref:`scriptPubKey <scriptpubkeys>`
+(or :ref:`script hash <script hashes>` or address):
 
-1. order confirmed transactions to the script hash by increasing
-height (and position in the block if there are more than one in a
-block)
+1. Consider all transactions touching the scriptPubKey (both those spending
+from it, and those funding it), both confirmed and unconfirmed (in mempool).
 
-2. form a string that is the concatenation of strings
+2. Order confirmed transactions by increasing height (and position in the
+block if there are more than one in a block).
+
+3. form a string that is the concatenation of strings
 ``"tx_hash:height:"`` for each transaction in order, where:
 
   * ``tx_hash`` is the transaction hash in hexadecimal
 
   * ``height`` is the height of the block it is in.
 
-3. Next, with mempool transactions in any order, append a similar
-string for those transactions, but where **height** is ``-1`` if the
-transaction has at least one unconfirmed input, and ``0`` if all
-inputs are confirmed.
+4. For mempool transactions, we define **height** to be ``-1`` if the
+transaction has at least one unconfirmed input, and ``0`` if all inputs are
+confirmed.
 
-4. The :dfn:`status` of the script hash is the :func:`sha256` hash of the
+5. Order mempool transactions by ``(-height, tx_hash)``, that is,
+``0`` height txs come before ``-1`` height txs, and secondarily the
+txid (in network byteorder) is used to arrive at a canonical ordering.
+
+6. Next, with mempool transactions in the specified order, append a similar
+string.
+
+7. The :dfn:`status` of the scriptPubKey is the :func:`sha256` hash of the
 full string expressed as a hexadecimal string, or :const:`null` if the
 string is empty because there are no transactions.
 
