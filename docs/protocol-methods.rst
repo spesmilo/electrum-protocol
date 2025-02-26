@@ -1312,9 +1312,17 @@ for roughly 10 minutes.
 Besides keeping the TCP connection alive, this can also be used
 to obfuscate traffic patterns.
 
+This method can be sent either as a JSON-RPC "Request" or as a JSON-RPC "Notification".
+If sent as a notification, the receiver is expected not to respond.
+This is useful to mimic the traffic pattern of a "useful" notification.
+
+Unlike with other methods, these notifications are not sent as a consequence of prior
+subscriptions. We simply abuse the JSON-RPC "Notification" mechanism to allow
+sending an "unrequested" message that does not warrant a response.
+
   **Note** This method is special, in that it is symmetric: both the client and
-  the server are allowed to send it, and both MUST support receiving it
-  and responding to it.
+  the server are allowed to send it (both as a request and as a notification),
+  and both MUST support receiving it and responding to it.
 
 **Signature**
 
@@ -1327,9 +1335,7 @@ to obfuscate traffic patterns.
   * *pong_len*
 
     The number of hex characters the other party should send in the *data* part of the response.
-    A non-negative integer, or :const:`-1`.
-    A value of :const:`-1` means the other party is asked not to respond. (This can be useful
-    against traffic analysis)
+    A non-negative integer.
 
   * *data*
 
@@ -1344,8 +1350,16 @@ to obfuscate traffic patterns.
     A hexadecimal string. Its value is to be ignored by the recipient.
     However, the length MUST match the *pong_len* that was requested.
 
+**Notifications**
 
-**Note** Both *data* fields should support reasonably long strings, at least as long as
+    .. function:: server.ping(data="")
+       :noindex:
+
+    * *data*
+
+      See **Result** above.
+
+**Note** The *data* fields should support reasonably long strings, at least as long as
 would be needed to encode the largest consensus-valid transaction. No limits here
 would mean an easy DOS-vector and waste of bandwidth using *pong_len*. The client could
 already send or request transactions using other protocol methods, so limiting below that
@@ -1396,11 +1410,10 @@ does not make sense.
 
   -> {
     "jsonrpc": "2.0",
-    "id": 4,
     "method": "server.ping",
-    "params": [-1, "deadbeefdeadbeefdeadbeefdeadbeef"]
+    "params": ["deadbeefdeadbeefdeadbeefdeadbeef"]
   }
-  (no response)
+  (No response. This was a notification.)
 
 
 
