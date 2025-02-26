@@ -968,7 +968,10 @@ and height.
   *height*
 
     Optionally, the height at which it was confirmed, an integer.
-    Clients are encouraged to provide this field when they can, to reduce server load.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.transaction.get_merkle"]["requires_height"]=true`.
 
 **Result**
 
@@ -976,7 +979,7 @@ and height.
 
   * *block_height*
 
-    The height of the block the transaction was confirmed in.
+    The height of the block the transaction was confirmed in, an integer.
 
   * *block_hash*
 
@@ -991,7 +994,7 @@ and height.
   * *pos*
 
     The 0-based index of the position of the transaction in the
-    ordered list of transactions in the block.
+    ordered list of transactions in the block, an integer.
 
 **Result Example**
 
@@ -1016,6 +1019,80 @@ and height.
     "block_hash": "0000000000000000029bb9b476f1c66403a151f1da007470f8b9c1d9e4b9106d",
     "pos": 710
   }
+
+blockchain.transaction.get_merkle_witness
+=========================================
+
+Witness-SPV. Proves that a transaction with a given wtxid was mined in a particular block.
+
+**Signature**
+
+  .. function:: blockchain.transaction.get_merkle_witness(txid, height=None, cb=false)
+  .. versionadded:: 1.6
+
+  *txid*
+
+    The txid (NOT wtxid) as a hexadecimal string.
+
+  *height*
+
+    Optionally, the height at which it was confirmed, an integer.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.transaction.get_merkle"]["requires_height"]=true`.
+    (the flavour key `"blockchain.transaction.get_merkle"` is reused with the other merkle method).
+
+  *cb*
+
+    A boolean.
+    If set to :const:`true`, the result MUST also include the *cb_tx* and *cb_proof* fields.
+    If set to :const:`false`, those fields are omitted.
+
+**Result**
+
+  A dictionary with the following keys:
+
+  * *wtxid*
+
+    The wtxid of the mined transaction, as a hexadecimal string.
+
+  * *block_height*
+
+    The height of the block the transaction was confirmed in, an integer.
+
+  * *block_hash*
+
+    The hash of the block the transaction was confirmed in, as a hexadecimal string.
+
+  * *pos*
+
+    The 0-based index of the position of the transaction in the
+    ordered list of transactions in the block, an integer.
+
+  * *cb_tx*
+
+    The raw coinbase transaction from the block, as a hexadecimal string.
+
+  * *cb_proof*
+
+    Merkle branch to prove `cb_tx` (against block header merkle root).
+    A list of transaction hashes the current hash is paired with,
+    recursively, in order to trace up to obtain merkle root of the
+    block (in header), deepest pairing first.
+
+  * *wmerkle*
+
+    A witness merkle branch to prove `wtxid` (against `cb_tx`).
+    A list of hashes the current hash is paired with,
+    recursively, in order to trace up to obtain `witness root hash`
+    (committed to in the coinbase), deepest pairing first.
+
+**Result Example**
+
+::
+
+  TODO
 
 blockchain.transaction.id_from_pos
 ==================================
