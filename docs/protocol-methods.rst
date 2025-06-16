@@ -260,6 +260,29 @@ This feerate does not guarantee acceptance into the mempool of the server.
 
    0.0
 
+blockchain.mempoolminfee
+========================
+
+Minimum fee rate in BTC/kvB for a transaction to be accepted into the servers mempool.
+
+**Signature**
+
+  .. function:: blockchain.mempoolminfee()
+
+**Result**
+
+  The BTC/kvB fee in whole coin units (BTC, not satoshis) as a floating point number.
+
+**Example Results**
+
+::
+
+   0.00002123
+
+::
+
+   0.00001000
+
 blockchain.scripthash.get_balance
 =================================
 
