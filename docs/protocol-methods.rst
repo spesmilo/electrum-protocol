@@ -237,8 +237,9 @@ Subscribe to receive block headers when a new block is found.
 blockchain.relayfee
 ===================
 
-Return the minimum fee a low-priority transaction must pay in order to
-be accepted to the daemon's memory pool.
+Feerates lower than this are considered zero fee and are not being
+relayed to the bitcoin network by the server.
+This feerate does not guarantee acceptance into the mempool of the server.
 
 **Signature**
 
