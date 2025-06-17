@@ -1087,6 +1087,19 @@ Witness-SPV. Proves that a transaction with a given wtxid was mined in a particu
     A list of hashes the current hash is paired with,
     recursively, in order to trace up to obtain `witness root hash`
     (committed to in the coinbase), deepest pairing first.
+    This field in the dict is present IFF the coinbase tx contains a witness commitment.
+    Note that even after segwit activation, if the block does not contain any segwit txs,
+    the witness commitment is optional.
+    Exactly one of the *wmerkle* and *merkle* keys are present.
+
+  * *merkle*
+
+    An old-style merkle branch to prove `txid` (against merkle root in block header).
+    Same format as in :func:`blockchain.transaction.get_merkle`.
+    This field in the dict is present IFF the coinbase tx does NOT contain a witness commitment.
+    Note that even after segwit activation, if the block does not contain any segwit txs,
+    the witness commitment is optional.
+    Exactly one of the *wmerkle* and *merkle* keys are present.
 
 **Result Example**
 
