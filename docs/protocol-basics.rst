@@ -32,6 +32,9 @@ within strings, so no confusion is possible there.  However it does permit newli
 extraneous whitespace between elements; client and server MUST NOT use newlines in such a
 way.
 
+Messages SHOULD be :ref:`padded <padding_messages>` to bucketed lengths,
+and buffered (to introduce delays) to protect against traffic analysis.
+
 If using JSON RPC 2.0's feature of parameter passing by name, the
 names shown in the description of the method or notification in
 question MUST be used.
@@ -211,3 +214,100 @@ and confirm the returned roots match.
   implementation would require hashing approximately 88MB of data to
   provide a single merkle proof.  ElectrumX implements an optimization
   such that it hashes only approximately 180KB of data per proof.
+
+
+.. _padding_messages:
+
+Traffic analysis
+----------------
+
+The goal is to defend against a passive network Man-in-the-Middle, such as an ISP
+or a Tor exit node, observing the encrypted TLS stream, and making educated guesses
+of the message contents based on TCP packet flow: timing, direction, and sizes of TCP packets.
+
+.. note:: Raw cleartext TCP as transport for the JSON-RPC payloads is clearly out-of-scope here.
+  Without encryption, a passive network observer could just see all the plaintext messages anyway.
+
+As a generic mitigation, implementations (both client and server) SHOULD
+
+- pad messages to bucketed lengths (e.g. powers of 2, with a min size), and
+
+- introduce small timing delays, ideally by buffering messages.
+
+We can fully backwards-compatibly add padding to the JSON-RPC messages by adding extra
+whitespaces inside the JSON objects in a way that parsers ignore.
+This can be done at any protocol version.
+
+For example, instead of sending::
+
+  {"jsonrpc":"2.0","method":"server.version","id":0,"params":["electrum/4.5.8","1.4"]}\n
+
+
+the client could send::
+
+  {"jsonrpc":"2.0","method":"server.version","id":0,"params":["electrum/4.5.8","1.4"]           }\n
+
+
+For better results, both the client and the server SHOULD implement logic to pad the messages
+that they send. So that requests and responses (and notifications) SHOULD all be padded.
+This does not have to be rolled out simultaneously: it is ok for only a client to pad what
+they send and not the server (or the other way around),
+that just limits the effectiveness of the defense against traffic analysis.
+
+Note when the JSON-RPC messages are sent in the TLS stream, they are sometimes batched together.
+That is, a single TCP packet might contain multiple small JSON-RPC messages,
+e.g. if the client tries to send multiple messages in a short burst.
+Also, many protocol requests are <100 bytes, so it would be wasteful to pad all to e.g. 1 kbyte.
+
+To save bandwidth, instead of padding individual JSON-RPC messages,
+participants (the client and the server) COULD implement an application-level buffer,
+write the messages into that buffer, periodically empty the buffer into the TLS stream
+and only add the padding into e.g. the last JSON-RPC message when emptying the buffer.
+
+.. note:: Example implementation
+  in the `Electrum client <https://github.com/spesmilo/electrum/pull/9875>`_
+  and in the `electrumx server <https://github.com/spesmilo/electrumx/pull/301>`_:
+
+  Both the client and the server writes raw JSON-RPC protocol messages into a buffer,
+  which is then occasionally flushed to the wire. When it is flushed, padding is added
+  to round up the total length to 1 KB, or to the next power of 2.
+  The buffer is flushed if it reaches 1 KB, plus there is extra logic that periodically polls
+  if the oldest message in the buffer is older than 1 second, in which case it is also flushed.
+
+.. note:: Many protocol requests are <100 bytes. Contrast that with broadcasting a transaction,
+  which could potentially be several megabytes of data.
+  (max consensus-valid tx is 4 MB, times 2 for hex-encoding)
+  Hence padding to a constant size is not practical.
+  Instead it is recommended to pad to bucketed lengths, e.g. to powers of 2.
+
+The specific details of the size of the buffer, how often it is flushed, and how the padding
+is done is not specified by the protocol at the moment.
+
+.. note:: Some server implementations do not deal with TLS at all,
+  they only implement the raw cleartext TCP protocol, and just recommend operators
+  to put a reverse proxy in front that does TLS termination.
+  Such protocol implementations (both client and server) are nevertheless still
+  SHOULD implement all mentioned traffic analysis protections.
+  That way, if the operator tunnels the traffic over TLS externally,
+  the resulting stream meaningfully receives the protections.
+
+.. note:: Buffering the messages to introduce timing delays
+  and padding to ~bucketed sizes is a good baseline.
+  However even approximate timing and direction of TCP packets
+  can leak too much information in some scenarios.
+
+  To combat timing analysis, both the client and the server
+  COULD send noise with a random timer, but more importantly at strategically selected events.
+  For example, when the client receives a new block header notification,
+  it COULD probabilistically send a random number of "server.ping" messages
+  with small random sleeps in-between.
+
+  Protocol version 1.6 extends "server.ping" so that either party can send it, and
+  that it can be sent either as a JSON-RPC "Request" or as a JSON-RPC "Notification".
+  If sent as a notification, the receiver is expected not to respond.
+
+  When the server sends a block header notification to the client,
+  it COULD also probabilistically send noise ("server.ping") notifications to the client,
+  perhaps conditioned on whether it will also send
+  :func:`blockchain.scriptpubkey.subscribe` notifications.
+  (so server could send noise if there are no status notifications to be sent)
