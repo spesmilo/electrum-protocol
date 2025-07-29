@@ -225,8 +225,8 @@ The goal is to defend against a passive network Man-in-the-Middle, such as an IS
 or a Tor exit node, observing the encrypted TLS stream, and making educated guesses
 of the message contents based on TCP packet flow: timing, direction, and sizes of TCP packets.
 
-.. note:: Raw cleartext TCP as transport for the JSON-RPC payloads is clearly out-of-scope here.
-  Without encryption, a passive network observer could just see all the plaintext messages anyway.
+.. note:: When using raw cleartext TCP as transport for the JSON-RPC payloads, without encryption,
+  a passive network observer can see all the plaintext messages.
 
 As a generic mitigation, implementations (both client and server) SHOULD
 
@@ -273,6 +273,10 @@ and only add the padding into e.g. the last JSON-RPC message when emptying the b
   to round up the total length to 1 KB, or to the next power of 2.
   The buffer is flushed if it reaches 1 KB, plus there is extra logic that periodically polls
   if the oldest message in the buffer is older than 1 second, in which case it is also flushed.
+  The worst-case 1 second delay is a performance hit that might in cases be felt by the user.
+  This is a tradeoff to make the flow of packets harder to analyse for an observer.
+
+  Implementations COULD make the buffer size and the max time delay configurable.
 
 .. note:: Many protocol requests are <100 bytes. Contrast that with broadcasting a transaction,
   which could potentially be several megabytes of data.
@@ -281,15 +285,28 @@ and only add the padding into e.g. the last JSON-RPC message when emptying the b
   Instead it is recommended to pad to bucketed lengths, e.g. to powers of 2.
 
 The specific details of the size of the buffer, how often it is flushed, and how the padding
-is done is not specified by the protocol at the moment.
+is done is not specified by the protocol at the moment. Consequently, neither the client nor
+the server can enforce the other to pad and much less to delay messages.
 
 .. note:: Some server implementations do not deal with TLS at all,
   they only implement the raw cleartext TCP protocol, and just recommend operators
   to put a reverse proxy in front that does TLS termination.
-  Such protocol implementations (both client and server) are nevertheless still
+  Such protocol implementations (both client and server) nevertheless still
   SHOULD implement all mentioned traffic analysis protections.
   That way, if the operator tunnels the traffic over TLS externally,
   the resulting stream meaningfully receives the protections.
+
+.. note:: An alternative approach to the buffer-based delaying and padding
+  could be to more aggressively use JSON-RPC batching to batch messages, and to use the
+  optional Record Padding of
+  `TLS 1.3 <https://www.rfc-editor.org/rfc/rfc8446#section-5.4>`_.
+  See `SSL_CONF_cmd RecordPadding` in openssl. However this only allows
+  padding to multiples of a constant, while above the recommendation was to pad to powers of 2.
+  The implementation might still want to delay messages a bit
+  to accumulate them into a larger JSON-RPC batch. Also note if users
+  (e.g. server operators) are expected to do their own TLS termination
+  (e.g. using a reverse proxy), configuring TLS RecordPadding would become an externality
+  for them to do, which they might forget.
 
 .. note:: Buffering the messages to introduce timing delays
   and padding to ~bucketed sizes is a good baseline.
@@ -297,7 +314,7 @@ is done is not specified by the protocol at the moment.
   can leak too much information in some scenarios.
 
   To combat timing analysis, both the client and the server
-  COULD send noise with a random timer, but more importantly at strategically selected events.
+  COULD send dummy RPCs with a random timer, but more importantly at strategically selected events.
   For example, when the client receives a new block header notification,
   it COULD probabilistically send a random number of "server.ping" messages
   with small random sleeps in-between.
