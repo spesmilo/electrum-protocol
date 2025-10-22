@@ -323,6 +323,33 @@ bandwidth-intensive request.
     implied starting height will be returned; this may range from zero
     to the coin-specific chunk size.
 
+
+blockchain.relayfee
+===================
+
+Feerates lower than this are considered zero fee and are not being
+relayed to the bitcoin network by the server.
+This feerate does not guarantee acceptance into the mempool of the server.
+
+**Signature**
+
+  .. function:: blockchain.relayfee()
+
+**Result**
+
+  The feerate in BTC/kvB, as a floating point number.
+
+**Example Results**
+
+::
+
+   1e-05
+
+::
+
+   0.0
+
+
 server.version
 ==============
 

@@ -207,3 +207,10 @@ New methods
 -----------
 
   * :func:`blockchain.transaction.broadcast_package` to broadcast a package of transactions (submitpackage).
+  * :func:`mempool.get_info` to get more detailed and general relayfee info.
+
+Removed methods
+---------------
+
+  * :func:`blockchain.relayfee` is removed. The `minrelaytxfee` field
+    of the new :func:`mempool.get_info` RPC is a direct replacement.
