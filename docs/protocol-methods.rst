@@ -247,8 +247,7 @@ This feerate does not guarantee acceptance into the mempool of the server.
 
 **Result**
 
-  The fee in whole coin units (BTC, not satoshis) as a
-  floating point number.
+  The feerate in BTC/kvB, as a floating point number.
 
 **Example Results**
 
