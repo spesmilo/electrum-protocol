@@ -32,6 +32,9 @@ within strings, so no confusion is possible there.  However it does permit newli
 extraneous whitespace between elements; client and server MUST NOT use newlines in such a
 way.
 
+Messages SHOULD be :ref:`padded <padding_messages>` to bucketed lengths,
+and buffered (to introduce delays) to protect against traffic analysis.
+
 If using JSON RPC 2.0's feature of parameter passing by name, the
 names shown in the description of the method or notification in
 question MUST be used.
@@ -68,25 +71,23 @@ revision number.
 
 A party to a connection will speak all protocol versions in a range,
 say from `protocol_min` to `protocol_max`, which may be the same.
-When a connection is made, both client and server must initially
-assume the protocol to use is their own `protocol_min`.
 
-The client should send a :func:`server.version` RPC call as early as
-possible in order to negotiate the precise protocol version; see its
-description for more detail.  All responses received in the stream
-from and including the server's response to this call will use its
-negotiated protocol version.
+The client must send a :func:`server.version` RPC call as the first
+message on the wire, in order to negotiate the precise protocol
+version; see its description for more detail.
+All responses received in the stream from and including the server's
+response to this call will use its negotiated protocol version.
 
 
+.. _scriptpubkeys:
 .. _script hashes:
 
 Script Hashes
 -------------
 
 A :dfn:`script hash` is the hash of the binary bytes of the locking
-script (ScriptPubKey), expressed as a hexadecimal string.  The hash
-function to use is given by the "hash_function" member of
-:func:`server.features` (currently :func:`sha256` only).  Like for
+script (scriptPubKey), expressed as a hexadecimal string.  The hash
+function to use is :func:`sha256`.  Like for
 block and transaction hashes, when converting the big-endian binary
 hash to a hexadecimal string the least-significant byte appears first,
 and the most-significant byte last.
@@ -95,7 +96,7 @@ For example, the legacy Bitcoin address from the genesis block::
 
     1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
 
-has P2PKH script::
+has P2PKH script (scriptPubKey)::
 
     76a91462e907b15cbf27d5425399ebf6f0fb50ebb88f1888ac
 
@@ -103,11 +104,12 @@ with SHA256 hash::
 
     6191c3b590bfcfa0475e877c302da1e323497acf3b42c08d8fa28e364edf018b
 
-which is sent to the server reversed as::
+the scripthash is defined as the reverse of that::
 
     8b01df4e368ea28f8dc0423bcf7a4923e3a12d307c875e47a0cfbf90b5c39161
 
-By subscribing to this hash you can find P2PKH payments to that address.
+By subscribing to the scriptPubKey or the scripthash,
+you can find P2PKH payments to that address.
 
 One public key, the genesis block public key, among the trillions for
 that address is::
@@ -115,7 +117,7 @@ that address is::
     04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb
     649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f
 
-which has P2PK script::
+which has P2PK script (scriptPubKey)::
 
     4104678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb
     649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5fac
@@ -124,11 +126,12 @@ with SHA256 hash::
 
     3318537dfb3135df9f3d950dbdf8a7ae68dd7c7dfef61ed17963ff80f3850474
 
-which is sent to the server reversed as::
+the scripthash is defined as the reverse of that::
 
     740485f380ff6379d11ef6fe7d7cdd68aea7f8bd0d953d9fdf3531fb7d531833
 
-By subscribing to this hash you can find P2PK payments to the genesis
+By subscribing to the scriptPubKey or the scripthash,
+you can find P2PK payments to the genesis
 block public key.
 
 .. note:: The Genesis block coinbase is uniquely unspendable and
@@ -141,26 +144,34 @@ block public key.
 Status
 ------
 
-To calculate the `status` of a :ref:`script hash <script hashes>` (or
-address):
+To calculate the `status` of a :ref:`scriptPubKey <scriptpubkeys>`
+(or :ref:`script hash <script hashes>` or address):
 
-1. order confirmed transactions to the script hash by increasing
-height (and position in the block if there are more than one in a
-block)
+1. Consider all transactions touching the scriptPubKey (both those spending
+from it, and those funding it), both confirmed and unconfirmed (in mempool).
 
-2. form a string that is the concatenation of strings
+2. Order confirmed transactions by increasing height (and position in the
+block if there are more than one in a block).
+
+3. form a string that is the concatenation of strings
 ``"tx_hash:height:"`` for each transaction in order, where:
 
   * ``tx_hash`` is the transaction hash in hexadecimal
 
   * ``height`` is the height of the block it is in.
 
-3. Next, with mempool transactions in any order, append a similar
-string for those transactions, but where **height** is ``-1`` if the
-transaction has at least one unconfirmed input, and ``0`` if all
-inputs are confirmed.
+4. For mempool transactions, we define **height** to be ``-1`` if the
+transaction has at least one unconfirmed input, and ``0`` if all inputs are
+confirmed.
 
-4. The :dfn:`status` of the script hash is the :func:`sha256` hash of the
+5. Order mempool transactions by ``(-height, tx_hash)``, that is,
+``0`` height txs come before ``-1`` height txs, and secondarily the
+txid (in network byteorder) is used to arrive at a canonical ordering.
+
+6. Next, with mempool transactions in the specified order, append a similar
+string.
+
+7. The :dfn:`status` of the scriptPubKey is the :func:`sha256` hash of the
 full string expressed as a hexadecimal string, or :const:`null` if the
 string is empty because there are no transactions.
 
@@ -203,3 +214,117 @@ and confirm the returned roots match.
   implementation would require hashing approximately 88MB of data to
   provide a single merkle proof.  ElectrumX implements an optimization
   such that it hashes only approximately 180KB of data per proof.
+
+
+.. _padding_messages:
+
+Traffic analysis
+----------------
+
+The goal is to defend against a passive network Man-in-the-Middle, such as an ISP
+or a Tor exit node, observing the encrypted TLS stream, and making educated guesses
+of the message contents based on TCP packet flow: timing, direction, and sizes of TCP packets.
+
+.. note:: When using raw cleartext TCP as transport for the JSON-RPC payloads, without encryption,
+  a passive network observer can see all the plaintext messages.
+
+As a generic mitigation, implementations (both client and server) SHOULD
+
+- pad messages to bucketed lengths (e.g. powers of 2, with a min size), and
+
+- introduce small timing delays, ideally by buffering messages.
+
+We can fully backwards-compatibly add padding to the JSON-RPC messages by adding extra
+whitespaces inside the JSON objects in a way that parsers ignore.
+This can be done at any protocol version.
+
+For example, instead of sending::
+
+  {"jsonrpc":"2.0","method":"server.version","id":0,"params":["electrum/4.5.8","1.4"]}\n
+
+
+the client could send::
+
+  {"jsonrpc":"2.0","method":"server.version","id":0,"params":["electrum/4.5.8","1.4"]           }\n
+
+
+For better results, both the client and the server SHOULD implement logic to pad the messages
+that they send. So that requests and responses (and notifications) SHOULD all be padded.
+This does not have to be rolled out simultaneously: it is ok for only a client to pad what
+they send and not the server (or the other way around),
+that just limits the effectiveness of the defense against traffic analysis.
+
+Note when the JSON-RPC messages are sent in the TLS stream, they are sometimes batched together.
+That is, a single TCP packet might contain multiple small JSON-RPC messages,
+e.g. if the client tries to send multiple messages in a short burst.
+Also, many protocol requests are <100 bytes, so it would be wasteful to pad all to e.g. 1 kbyte.
+
+To save bandwidth, instead of padding individual JSON-RPC messages,
+participants (the client and the server) COULD implement an application-level buffer,
+write the messages into that buffer, periodically empty the buffer into the TLS stream
+and only add the padding into e.g. the last JSON-RPC message when emptying the buffer.
+
+.. note:: Example implementation
+  in the `Electrum client <https://github.com/spesmilo/electrum/pull/9875>`_
+  and in the `electrumx server <https://github.com/spesmilo/electrumx/pull/301>`_:
+
+  Both the client and the server writes raw JSON-RPC protocol messages into a buffer,
+  which is then occasionally flushed to the wire. When it is flushed, padding is added
+  to round up the total length to 1 KB, or to the next power of 2.
+  The buffer is flushed if it reaches 1 KB, plus there is extra logic that periodically polls
+  if the oldest message in the buffer is older than 1 second, in which case it is also flushed.
+  The worst-case 1 second delay is a performance hit that might in cases be felt by the user.
+  This is a tradeoff to make the flow of packets harder to analyse for an observer.
+
+  Implementations COULD make the buffer size and the max time delay configurable.
+
+.. note:: Many protocol requests are <100 bytes. Contrast that with broadcasting a transaction,
+  which could potentially be several megabytes of data.
+  (max consensus-valid tx is 4 MB, times 2 for hex-encoding)
+  Hence padding to a constant size is not practical.
+  Instead it is recommended to pad to bucketed lengths, e.g. to powers of 2.
+
+The specific details of the size of the buffer, how often it is flushed, and how the padding
+is done is not specified by the protocol at the moment. Consequently, neither the client nor
+the server can enforce the other to pad and much less to delay messages.
+
+.. note:: Some server implementations do not deal with TLS at all,
+  they only implement the raw cleartext TCP protocol, and just recommend operators
+  to put a reverse proxy in front that does TLS termination.
+  Such protocol implementations (both client and server) nevertheless still
+  SHOULD implement all mentioned traffic analysis protections.
+  That way, if the operator tunnels the traffic over TLS externally,
+  the resulting stream meaningfully receives the protections.
+
+.. note:: An alternative approach to the buffer-based delaying and padding
+  could be to more aggressively use JSON-RPC batching to batch messages, and to use the
+  optional Record Padding of
+  `TLS 1.3 <https://www.rfc-editor.org/rfc/rfc8446#section-5.4>`_.
+  See `SSL_CONF_cmd RecordPadding` in openssl. However this only allows
+  padding to multiples of a constant, while above the recommendation was to pad to powers of 2.
+  The implementation might still want to delay messages a bit
+  to accumulate them into a larger JSON-RPC batch. Also note if users
+  (e.g. server operators) are expected to do their own TLS termination
+  (e.g. using a reverse proxy), configuring TLS RecordPadding would become an externality
+  for them to do, which they might forget.
+
+.. note:: Buffering the messages to introduce timing delays
+  and padding to ~bucketed sizes is a good baseline.
+  However even approximate timing and direction of TCP packets
+  can leak too much information in some scenarios.
+
+  To combat timing analysis, both the client and the server
+  COULD send dummy RPCs with a random timer, but more importantly at strategically selected events.
+  For example, when the client receives a new block header notification,
+  it COULD probabilistically send a random number of "server.ping" messages
+  with small random sleeps in-between.
+
+  Protocol version 1.6 extends "server.ping" so that either party can send it, and
+  that it can be sent either as a JSON-RPC "Request" or as a JSON-RPC "Notification".
+  If sent as a notification, the receiver is expected not to respond.
+
+  When the server sends a block header notification to the client,
+  it COULD also probabilistically send noise ("server.ping") notifications to the client,
+  perhaps conditioned on whether it will also send
+  :func:`blockchain.scriptpubkey.subscribe` notifications.
+  (so server could send noise if there are no status notifications to be sent)
