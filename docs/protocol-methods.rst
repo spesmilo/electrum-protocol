@@ -587,6 +587,12 @@ with the child being the last element in the array.
     Note that the exact structure and semantics can depend on the bitcoind version,
     and hence the electrum protocol can make no guarantees about it.
 
+.. note:: The exact relay behaviour might depend on the bitcoind version of the server.
+
+.. note:: Server implementations should verify (e.g. by enforcing a minimum bitcoind version at runtime)
+  that the backing bitcoind supports relay of transaction packages. For example, note that Bitcoin Core 26.0
+  already exposes the `submitpackage` RPC however it is effectively non-functional until Bitcoin Core 28.0.
+
 **Result Example**
 
 When *verbose* is :const:`false`::
