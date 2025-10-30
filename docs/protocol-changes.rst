@@ -194,6 +194,8 @@ Changes
   * Breaking change for the version negotiation: we now mandate that
     the :func:`server.version` message must be the first message sent.
     That is, version negotiation must happen before any other messages.
+  * Also for :func:`server.version`, the server must tolerate and ignore
+    extraneous arguments, to allow for extensions in future protocol versions.
   * The status of a scripthash has its definition tightened in a
     backwards-compatible way: mempool txs now have a canonical ordering
     defined for the calculation (previously their order was undefined).

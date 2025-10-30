@@ -1122,6 +1122,8 @@ Only the first :func:`server.version` message is accepted.
 **Signature**
 
   .. function:: server.version(client_name="", protocol_version="1.4")
+  .. versionchanged:: 1.6
+     server must tolerate and ignore extraneous args
 
   * *client_name*
 
@@ -1133,6 +1135,9 @@ Only the first :func:`server.version` message is accepted.
     string.  If ``protocol_min`` and ``protocol_max`` are the same,
     they can be passed as a single string rather than as an array of
     two strings, as for the default value.
+
+  Extraneous unknown args MUST be tolerated and ignored by the server,
+  to allow for future extensions.
 
   The server should use the highest protocol version both support::
 
@@ -1162,6 +1167,16 @@ Only the first :func:`server.version` message is accepted.
 **Example Result**::
 
   ["ElectrumX 1.2.1", "1.2"]
+
+**Example**
+
+  Redundant unknown arguments MUST be ignored and tolerated by the server::
+
+    server.version("electrum/4.6.2", ["1.4", "1.6"], "trailing_garbage1", 9999.9, "dd": {})
+
+**Example Result**::
+
+  ["ElectrumX 1.18.0", "1.4"]
 
 
 Some more stuff for altcoins
