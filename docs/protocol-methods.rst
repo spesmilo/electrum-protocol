@@ -583,9 +583,14 @@ with the child being the last element in the array.
 
   If *verbose* is :const:`true`:
 
-    The bitcoind response according to its RPC API documentation.
-    Note that the exact structure and semantics can depend on the bitcoind version,
-    and hence the electrum protocol can make no guarantees about it.
+    The result is a bitcoind-specific dictionary -- whatever bitcoind
+    returns as response to the submitpackage (or equivalent) RPC.
+    (`example docs <https://bitcoincore.org/en/doc/30.0.0/rpc/rawtransactions/submitpackage/>`_ for Bitcoin Core)
+
+    As the exact structure and semantics depend on the bitcoind version (or alternative bitcoind, e.g. btcd),
+    the electrum protocol can make no guarantees about it.
+    Unlike the `verbose=False` result, which is guaranteed to be stable and can be relied upon,
+    the `verbose=True` result should be considered experimental and better-suited for debugging.
 
 .. note:: The exact relay behaviour might depend on the bitcoind version of the server.
 
@@ -614,7 +619,7 @@ When *verbose* is :const:`false`::
       ]
     }
 
-When *verbose* is :const:`true`::
+When *verbose* is :const:`true` (exact structure depends on bitcoind impl and version, and should not be relied upon)::
 
     {                                   (json object)
       "package_msg" : "str",            (string) The transaction package result message. "success" indicates all transactions were accepted into or are already in the mempool.
