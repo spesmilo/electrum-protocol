@@ -76,7 +76,7 @@ With *cp_height* 8::
 blockchain.block.headers
 ========================
 
-Return a concatenated chunk of block headers from the main chain.
+Return a chunk of block headers from the main chain.
 
 **Signature**
 
@@ -85,6 +85,8 @@ Return a concatenated chunk of block headers from the main chain.
   .. versionchanged:: 1.4
      *cp_height* parameter added
   .. versionchanged:: 1.4.1
+  .. versionchanged:: 1.6
+     response contains *headers* field instead of *hex*
 
   *start_height*
 
@@ -106,17 +108,16 @@ Return a concatenated chunk of block headers from the main chain.
   A dictionary with the following members:
 
   * *count*
-
     The number of headers returned, between zero and the number
     requested.  If the chain has not extended sufficiently far, only
     the available headers will be returned.  If more headers than
     *max* were requested at most *max* will be returned.
 
-  * *hex*
+  * *headers*
 
-    The binary block headers concatenated together in-order as a
-    hexadecimal string.  Starting with version 1.4.1, AuxPoW data (if present
-    in the original header) is truncated if *cp_height* is nonzero.
+    An array containing the binary block headers in-order; each header is a
+    hexadecimal string.  AuxPoW data (if present in the original header) is
+    truncated if *cp_height* is nonzero.
 
   * *max*
 
@@ -149,7 +150,11 @@ See :ref:`here <cp_height example>` for an example of *root* and
 
   {
     "count": 2,
-    "hex": "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e36299"
+    "headers":
+    [
+      "0100000000000000000000000000000000000000000000000000000000000000000000003ba3edfd7a7b12b27ac72c3e67768f617fc81bc3888a51323a9fb8aa4b1e5e4a29ab5f49ffff001d1dac2b7c",
+      "010000006fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000982051fd1e4ba744bbbe680e1fee14677ba1a3c3540bf7b1cdb606e857233e0e61bc6649ffff001d01e36299"
+    ],
     "max": 2016
   }
 
@@ -161,11 +166,20 @@ be confirmed within a certain number of blocks.
 
 **Signature**
 
-  .. function:: blockchain.estimatefee(number)
+  .. function:: blockchain.estimatefee(number, mode=None)
+  .. versionchanged:: 1.6
+     *mode* argument added
 
   *number*
 
     The number of blocks to target for confirmation.
+
+  *mode*
+
+    A string to pass to the bitcoind *estimatesmartfee* RPC as the
+    *estimate_mode* parameter. Optional. If omitted, the corresponding
+    parameter to the bitcoind RPC is also omitted, i.e. the default
+    value is determined by bitcoind.
 
 **Result**
 
@@ -178,6 +192,11 @@ be confirmed within a certain number of blocks.
 ::
 
   0.00101079
+
+.. note:: This estimate typically comes from the Bitcoin daemon, which only updates
+  its estimate when new blocks are mined. The server is free to cache this internally
+  for performance reasons, however it SHOULD avoid sending stale estimates
+  by e.g. invalidating the cache before notifying clients of a new block header.
 
 
 blockchain.headers.subscribe
@@ -233,31 +252,6 @@ Subscribe to receive block headers when a new block is found.
   to figure out the common ancestor block and request any missing
   block headers to acquire a consistent view of the chain state.
 
-
-blockchain.relayfee
-===================
-
-Feerates lower than this are considered zero fee and are not being
-relayed to the bitcoin network by the server.
-This feerate does not guarantee acceptance into the mempool of the server.
-
-**Signature**
-
-  .. function:: blockchain.relayfee()
-
-**Result**
-
-  The feerate in BTC/kvB, as a floating point number.
-
-**Example Results**
-
-::
-
-   1e-05
-
-::
-
-   0.0
 
 blockchain.scripthash.get_balance
 =================================
@@ -359,6 +353,8 @@ hashes>`.
 
   .. function:: blockchain.scripthash.get_mempool(scripthash)
   .. versionadded:: 1.1
+  .. versionchanged:: 1.6
+     results must be sorted (previously undefined order)
 
   *scripthash*
 
@@ -366,8 +362,9 @@ hashes>`.
 
 **Result**
 
-  A list of mempool transactions in arbitrary order.  Each mempool
-  transaction is a dictionary with the following keys:
+  A list of mempool transactions. The order is the same as when computing the
+  :ref:`status <status>` of the script hash.
+  Each mempool transaction is a dictionary with the following keys:
 
   * *height*
 
@@ -551,6 +548,117 @@ Protocol version 1.0 returning an error as the result:
 ::
 
   "258: txn-mempool-conflict"
+
+blockchain.transaction.broadcast_package
+========================================
+
+Broadcast a package of transactions to the network (submitpackage). The package must consist of a child with its parents,
+and none of the parents may depend on one another. The package must be topologically sorted,
+with the child being the last element in the array.
+
+**Signature**
+
+  .. function:: blockchain.transaction.broadcast_package(raw_txs, verbose=false)
+
+  *raw_txs*
+
+    An array of raw transactions, each as a hexadecimal string.
+
+  *verbose*
+
+    Whether a verbose coin-specific response is required.
+
+**Result**
+
+  If *verbose* is :const:`false`:
+
+    A dictionary with the following keys:
+
+    * `success`
+        * Type: bool
+        * Value: Indicating the result of the package submission
+    * `errors`
+        * Type: Optional[List[Dict]]
+        * Value: Error message and txid (NOT wtxid) of transactions that were not accepted
+
+  If *verbose* is :const:`true`:
+
+    The result is a bitcoind-specific dictionary -- whatever bitcoind
+    returns as response to the submitpackage (or equivalent) RPC.
+    (`example docs <https://bitcoincore.org/en/doc/30.0.0/rpc/rawtransactions/submitpackage/>`_ for Bitcoin Core)
+
+    As the exact structure and semantics depend on the bitcoind version (or alternative bitcoind, e.g. btcd),
+    the electrum protocol can make no guarantees about it.
+    Unlike the `verbose=False` result, which is guaranteed to be stable and can be relied upon,
+    the `verbose=True` result should be considered experimental and better-suited for debugging.
+
+.. note:: The exact relay behaviour might depend on the bitcoind version of the server.
+
+.. note:: Server implementations should verify (e.g. by enforcing a minimum bitcoind version at runtime)
+  that the backing bitcoind supports relay of transaction packages. For example, note that Bitcoin Core 26.0
+  already exposes the `submitpackage` RPC however it is effectively non-functional until Bitcoin Core 28.0.
+
+**Result Example**
+
+When *verbose* is :const:`false`:
+
+    Successful broadcast::
+
+        {
+          "success": true
+        }
+
+    With errors::
+
+        {
+          "success": false,
+          "errors":
+          [
+            {
+              "txid": "ec6f295cd4b1b91f59cabb0ab8fdc7c76580db08be6426e465f75a69d82b9659",
+              "error": "bad-txns-inputs-missingorspent"
+            }
+          ]
+        }
+
+When *verbose* is :const:`true` (exact structure depends on bitcoind impl and version, and should not be relied upon)::
+
+    {                                   (json object)
+      "package_msg" : "str",            (string) The transaction package result message. "success" indicates all transactions were accepted into or are already in the mempool.
+      "tx-results" : {                  (json object) transaction results keyed by wtxid
+        "wtxid" : {                     (json object) transaction wtxid
+          "txid" : "hex",               (string) The transaction hash in hex
+          "other-wtxid" : "hex",        (string, optional) The wtxid of a different transaction with the same txid but different witness found in the mempool. This means the submitted transaction was ignored.
+          "vsize" : n,                  (numeric, optional) Sigops-adjusted virtual transaction size.
+          "fees" : {                    (json object, optional) Transaction fees
+            "base" : n,                 (numeric) transaction fee in BTC
+            "effective-feerate" : n,    (numeric, optional) if the transaction was not already in the mempool, the effective feerate in BTC per KvB. For example, the package feerate and/or feerate with modified fees from prioritisetransaction.
+            "effective-includes" : [    (json array, optional) if effective-feerate is provided, the wtxids of the transactions whose fees and vsizes are included in effective-feerate.
+              "hex",                    (string) transaction wtxid in hex
+              ...
+            ]
+          },
+          "error" : "str"               (string, optional) The transaction error string, if it was rejected by the mempool
+        },
+        ...
+      },
+      "replaced-transactions" : [       (json array, optional) List of txids of replaced transactions
+        "hex",                          (string) The transaction id
+        ...
+      ]
+    }
+
+.. note:: If the input is malformed, notably if `raw_txs` is not a well-formed package,
+  errors will be sent back as JSON RPC ERROR, as usual.
+  Ultimately the distinction can depend on bitcoind.
+  Compare examples (id=3 gets JSON RPC ERROR, but id=4 gets success=false with errors array)::
+
+    <- {"id": 3, "method": "blockchain.transaction.broadcast_package", "params": [["02000000000102f758cda73a362840995d62d0079a22a11fc2652cb7740fffb8132486fe76fe730000000000fdffffff31b2d3d434d7c8f46b23a47aabc3c9498d4df5ffb9f13e13c3c3ecb52ab570b80000000000fdffffff02400d0300000000001600149f9aa3795e57c535d2f7b160ff023804c60fca6e30b3e80b00000000160014553a3b97c2cc7d3d4edeace3281ff038bd0676290247304402202c84cb82c94978b688154f06c3b91e64b99f2c2124d7c53004c81d23c4ce7e5102206a5c87986d1272140a8625a0fbd9926c2a93bf41517aca28615499140936109c0121027ba4d3ee6471a985307a37d09eb9a0a73c1a31b57616fe3e53a3d6d4540025190247304402203106d7622d3bcb415ae898558e8d414c337e2e7d4a485bbf4bffa8ba3bc620b802201340334f4d89e03735b3b183602ce4b3377225571ebbf18e97eaa24f3fcc5d4f0121027ba4d3ee6471a985307a37d09eb9a0a73c1a31b57616fe3e53a3d6d454002519a4090000", "02000000000101ab93b5c11c9a591b441de4228c942603a0479fa0d33a1a2bee72e75bd301c25e0000000000fdffffff01640c03000000000016001446116f48b60ad5b22377dcf951643e2e1aa3957a0247304402206002cc311d16b5cef7349bcd4174d3ae14d5741680ab81d7e24bc31c89634fd6022072d0d6b72c4ddbe62c527ebc5955677793cc13fe801ec22604d93bbc1b1f3291012102fb265cce2019e555fe23fb45e4cbc3d966bb399a52b2e93b808ad7961b426de1a4090000"]]}
+    -> {"jsonrpc":"2.0","error":{"code":1,"message":"the tx package was rejected by network rules.\n\npackage topology disallowed. not child-with-parents or parents depend on each other.."},"id":3}
+
+    <- {"id": 4, "method": "blockchain.transaction.broadcast_package", "params": [["0200000000010148d372010d796a89f12864b5c86495d67bce98cb9ac3ba652bf811aa6b82c36c0000000000fdffffff01d20c030000000000160014e437538b7f13871562066babd1fbab72b4fba958024730440220662e4d917c0af3b37dd0bad65c9b46ba2a1504cd4f1346f35c0020f6d0edbd0e02207b44f98612bd3f58164385f4a572af2a2f471c924f6569aa6f3ddcaaa0e57753012103c3172a9f8820681c62b8bf28961988a4642b33f4920b9da14b06965c7fff83fd68090000", "02000000000101ab93b5c11c9a591b441de4228c942603a0479fa0d33a1a2bee72e75bd301c25e0000000000fdffffff014e0c03000000000016001446116f48b60ad5b22377dcf951643e2e1aa3957a0247304402202850349c76c41b801c429feaee96d773788b478c1cf051e967824fe504e5948902204bbede1252490c06c38feb206266aaf126937f6a3bc0a16d038fabde9781c6fd012102fb265cce2019e555fe23fb45e4cbc3d966bb399a52b2e93b808ad7961b426de1a4090000"]]}
+    -> {"jsonrpc":"2.0","result":{"success":false,"errors":[{"txid":"c13d8d63284853d3417a150cfddcfc62d31cab4b311c9322cb43f979a518ac3a","error":"insufficient fee, rejecting replacement c13d8d63284853d3417a150cfddcfc62d31cab4b311c9322cb43f979a518ac3a, not enough additional fees to relay; 0.00000022 < 0.0000011"}]},"id":4}
+
 
 blockchain.transaction.get
 ==========================
@@ -795,6 +903,42 @@ pool, weighted by transaction size.
    [[59.5, 30324], [40.1, 34305], [35.0, 38459], [29.3, 41270], [27.0, 45167], [24.3, 53512], [22.9, 53488], [21.8, 70279], [20.0, 65328], [18.2, 72180], [18.1, 5254], [18.0, 191579], [16.5, 103640], [15.7, 106715], [15.1, 141776], [14.0, 183261], [13.5, 166496], [11.8, 166050], [11.1, 242436], [9.2, 184043], [7.1, 202137], [5.2, 222011], [4.8, 344788], [4.6, 17101], [4.5, 1696864], [4.1, 598001], [4.0, 32688687], [3.9, 505192], [3.8, 38417], [3.7, 2944970], [3.3, 693364], [3.2, 726373], [3.1, 308878], [3.0, 11884957], [2.6, 996967], [2.3, 822802], [2.2, 9075547], [2.1, 12149801], [2.0, 16387874], [1.4, 873120], [1.3, 3493364], [1.1, 2302460], [1.0, 23204633]]
 
 
+mempool.get_info
+================
+
+Returns details on the active state of the TX memory pool.
+
+**Signature**
+
+  .. function:: mempool.get_info()
+
+**Result**
+
+  A dictionary with the following keys:
+
+    * `mempoolminfee`
+        * Type: floating point number
+        * Value:
+            Dynamic minimum fee rate in BTC/kvB for tx to be accepted given current conditions.
+            The maximum of minrelaytxfee and minimum mempool fee, in BTC/kvB.
+    * `minrelaytxfee`
+        * Type: floating point number
+        * Value: Static operator-configurable minimum relay fee for transactions, in BTC/kvB.
+    * `incrementalrelayfee`
+        * Type: floating point number
+        * Value: Static operator-configurable minimum fee rate increment for mempool limiting or replacement, in BTC/kvB.
+
+**Example Result**
+
+::
+
+  {
+      "mempoolminfee": 0.00001000,
+      "minrelaytxfee": 0.00001000,
+      "incrementalrelayfee": 0.00001000
+  }
+
+
 server.add_peer
 ===============
 
@@ -991,11 +1135,14 @@ server.version
 ==============
 
 Identify the client to the server and negotiate the protocol version.
+This must be the first message sent on the wire.
 Only the first :func:`server.version` message is accepted.
 
 **Signature**
 
   .. function:: server.version(client_name="", protocol_version="1.4")
+  .. versionchanged:: 1.6
+     server must tolerate and ignore extraneous args
 
   * *client_name*
 
@@ -1007,6 +1154,9 @@ Only the first :func:`server.version` message is accepted.
     string.  If ``protocol_min`` and ``protocol_max`` are the same,
     they can be passed as a single string rather than as an array of
     two strings, as for the default value.
+
+  Extraneous unknown args MUST be tolerated and ignored by the server,
+  to allow for future extensions.
 
   The server should use the highest protocol version both support::
 
@@ -1036,6 +1186,16 @@ Only the first :func:`server.version` message is accepted.
 **Example Result**::
 
   ["ElectrumX 1.2.1", "1.2"]
+
+**Example**
+
+  Redundant unknown arguments MUST be ignored and tolerated by the server::
+
+    server.version("electrum/4.6.2", ["1.4", "1.6"], "trailing_garbage1", 9999.9, "dd": {})
+
+**Example Result**::
+
+  ["ElectrumX 1.18.0", "1.4"]
 
 
 Some more stuff for altcoins

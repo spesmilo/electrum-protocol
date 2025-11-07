@@ -15,7 +15,7 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
-VERSION = "Electrum Protocol 1.4.x"
+VERSION = "Electrum Protocol 1.6.x"
 
 # -- Project information -----------------------------------------------------
 
