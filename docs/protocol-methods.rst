@@ -14,6 +14,8 @@ Return the block header at the given height.
   .. versionchanged:: 1.4
      *cp_height* parameter added
   .. versionchanged:: 1.4.1
+  .. versionchanged:: 1.7
+     *cp_height* support made optional
 
   *height*
 
@@ -25,6 +27,10 @@ Return the block header at the given height.
     otherwise the following must hold:
 
       *height* <= *cp_height*
+
+    The server CAN decide not to support a non-zero cp_height value, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.block.header"]["supports_cp_height"]=false`.
 
 **Result**
 
@@ -87,6 +93,8 @@ Return a chunk of block headers from the main chain.
   .. versionchanged:: 1.4.1
   .. versionchanged:: 1.6
      response contains *headers* field instead of *hex*
+  .. versionchanged:: 1.7
+     *cp_height* support made optional
 
   *start_height*
 
@@ -102,6 +110,11 @@ Return a chunk of block headers from the main chain.
     otherwise the following must hold:
 
       *start_height* + (*count* - 1) <= *cp_height*
+
+    The server CAN decide not to support a non-zero cp_height value, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.block.header"]["supports_cp_height"]=false`.
+    (the flavour key `"blockchain.block.header"` is reused with the other header method).
 
 **Result**
 
@@ -253,20 +266,19 @@ Subscribe to receive block headers when a new block is found.
   block headers to acquire a consistent view of the chain state.
 
 
-blockchain.scripthash.get_balance
-=================================
+blockchain.scriptpubkey.get_balance
+===================================
 
-Return the confirmed and unconfirmed balances of a :ref:`script hash
-<script hashes>`.
+Return the confirmed and unconfirmed balances of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_balance(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.get_balance(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
@@ -285,25 +297,24 @@ Return the confirmed and unconfirmed balances of a :ref:`script hash
     "unconfirmed": 23684400
   }
 
-blockchain.scripthash.get_history
-=================================
+blockchain.scriptpubkey.get_history
+===================================
 
-Return the confirmed and unconfirmed history of a :ref:`script hash
-<script hashes>`.
+Return the confirmed and unconfirmed history of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_history(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.get_history(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
   A list of confirmed transactions in blockchain order, with the
-  output of :func:`blockchain.scripthash.get_mempool` appended to the
+  output of :func:`blockchain.scriptpubkey.get_mempool` appended to the
   list.  Each confirmed transaction is a dictionary with the following
   keys:
 
@@ -315,8 +326,12 @@ Return the confirmed and unconfirmed history of a :ref:`script hash
 
     The transaction hash in hexadecimal.
 
-  See :func:`blockchain.scripthash.get_mempool` for how mempool
+  See :func:`blockchain.scriptpubkey.get_mempool` for how mempool
   transactions are returned.
+
+  If the history of the spk is too long (busy address, touched by thousands of txs),
+  and so the server refuses to serve it, it SHOULD send a JSON-RPC error with integer code `10_001`
+  to communicate this to the client.
 
 **Result Examples**
 
@@ -343,27 +358,24 @@ Return the confirmed and unconfirmed history of a :ref:`script hash
     }
   ]
 
-blockchain.scripthash.get_mempool
-=================================
+blockchain.scriptpubkey.get_mempool
+===================================
 
-Return the unconfirmed transactions of a :ref:`script hash <script
-hashes>`.
+Return the unconfirmed transactions of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.get_mempool(scripthash)
-  .. versionadded:: 1.1
-  .. versionchanged:: 1.6
-     results must be sorted (previously undefined order)
+  .. function:: blockchain.scriptpubkey.get_mempool(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
   A list of mempool transactions. The order is the same as when computing the
-  :ref:`status <status>` of the script hash.
+  :ref:`status <status>` of the scriptPubKey.
   Each mempool transaction is a dictionary with the following keys:
 
   * *height*
@@ -391,19 +403,19 @@ hashes>`.
   ]
 
 
-blockchain.scripthash.listunspent
-=================================
+blockchain.scriptpubkey.listunspent
+===================================
 
-Return an ordered list of UTXOs sent to a script hash.
+Return an ordered list of UTXOs sent to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.listunspent(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.listunspent(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
@@ -464,50 +476,248 @@ Return an ordered list of UTXOs sent to a script hash.
 
 .. _subscribed:
 
-blockchain.scripthash.subscribe
-===============================
+blockchain.scriptpubkey.subscribe
+=================================
 
-Subscribe to a script hash.
+Subscribe to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.subscribe(scripthash)
-  .. versionadded:: 1.1
+  .. function:: blockchain.scriptpubkey.subscribe(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
-  The :ref:`status <status>` of the script hash.
+  The :ref:`status <status>` of the scriptPubKey.
 
 **Notifications**
 
-  The client will receive a notification when the :ref:`status <status>` of the script
-  hash changes.  Its signature is
+  The client will receive a notification when the :ref:`status <status>` of the
+  scriptPubKey changes. Importantly, the notifications use :ref:`script hash <script hashes>`
+  instead of scriptPubKey. The scripthash corresponds to the scriptPubKey from the
+  original request.
+  The client is expected to maintain a mapping scripthash->scriptpubkey, or similar,
+  to be able to figure out what the notification refers to.
+  Notably, this way servers do not have to store in memory the scriptpubkey corresponding
+  to the original request (which can be up to 10 KB in size, as per Bitcoin consensus),
+  only the scripthash (which is fixed size). Also, this limits upstream bandwidth usage
+  of servers.
+  The signature is
 
-    .. function:: blockchain.scripthash.subscribe(scripthash, status)
+    .. function:: blockchain.scriptpubkey.subscribe(scripthash, status)
        :noindex:
 
-blockchain.scripthash.unsubscribe
-=================================
+  If the history of the spk is too long (busy address, touched by thousands of txs),
+  and so the server refuses to serve it, it SHOULD send a JSON-RPC error with integer code `10_001`
+  to communicate this to the client.
 
-Unsubscribe from a script hash, preventing future notifications if its :ref:`status
+blockchain.scriptpubkey.unsubscribe
+===================================
+
+Unsubscribe from a scriptPubKey, preventing future notifications if its :ref:`status
 <status>` changes.
 
 **Signature**
 
-  .. function:: blockchain.scripthash.unsubscribe(scripthash)
-  .. versionadded:: 1.4.2
+  .. function:: blockchain.scriptpubkey.unsubscribe(scriptpubkey)
+  .. versionadded:: 1.7
 
-  *scripthash*
+  *scriptpubkey*
 
-    The script hash as a hexadecimal string.
+    The scriptPubKey as a hexadecimal string.
 
 **Result**
 
-  Returns :const:`True` if the scripthash was subscribed to, otherwise :const:`False`.
+  Returns :const:`True` if the scriptpubkey was subscribed to, otherwise :const:`False`.
+  Note that :const:`False` might be returned even for something subscribed to earlier,
+  because the server can drop subscriptions in rare circumstances.
+
+blockchain.outpoint.subscribe
+=============================
+
+Subscribe to a transaction outpoint (TXO), to get notifications about its status.
+A status involves up to two transactions: the funding transaction that creates
+the TXO (as one of its outputs), and the spending transaction that uses it
+as an input (spends it).
+
+**Signature**
+
+  .. function:: blockchain.outpoint.subscribe(tx_hash, txout_idx, spk_hint=None)
+  .. versionadded:: 1.7
+
+  *tx_hash*
+
+    The TXID of the funding transaction as a hexadecimal string.
+    (sometimes called prevout_hash, in inputs)
+
+  *txout_idx*
+
+    The output index, a non-negative integer. (sometimes called prevout_n, in inputs)
+
+  *spk_hint*
+
+    The scriptPubKey (output script) corresponding to the outpoint, as a hexadecimal
+    string. This is optional, and if provided might be used by the server to find
+    the outpoint. The behaviour is undefined if an incorrect value is provided.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.outpoint.subscribe"]["requires_spk_hint"]=true`.
+
+.. note::  The server MAY automatically clean up subscriptions (unsubscribe the client)
+  where the spending transaction is already deeply mined at a reorg-safe height (typically
+  100+ blocks deep).
+  Similarly, the server MAY ignore new subscription requests if the spending tx is already
+  mined at a reorg-safe height but it still MUST send at least one full response.
+
+**Result**
+
+  The status of the TXO, taking the mempool into consideration.
+  The output is a dictionary, containing 0, 1, or 3 of the following items:
+
+  * *height*
+
+    The integer height of the block the funding transaction was confirmed in.
+    If the funding transaction is in the mempool; the value is
+    ``0`` if all its inputs are confirmed, and ``-1`` otherwise.
+    This key must be present if and only if there exists a funding transaction
+    (either in the best chain or in the mempool), regardless of spentness.
+
+  * *spender_txhash*
+
+    The TXID of the spending transaction as a hexadecimal string.
+    This key is present if and only if there exists a spending transaction
+    (either in the best chain or in the mempool).
+
+  * *spender_height*
+
+    The integer height of the block the spending transaction was confirmed in.
+    If the spending transaction is in the mempool; the value is
+    ``0`` if all its inputs are confirmed, and ``-1`` otherwise.
+    This key is present if and only if the *spender_txhash* key is present.
+
+**Result Examples**
+
+::
+
+  {}
+
+::
+
+  {
+    "height": 1866594
+  }
+
+::
+
+  {
+    "height": 1866594,
+    "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
+    "spender_height": 0
+  }
+
+**Notifications**
+
+  The client will receive a notification when the `status` of the outpoint changes.
+  That is, any event that changes any field of the `status` dictionary results in a
+  notification. Some examples:
+
+  * a funding/spending tx appearing in the mempool if there was no such tx when the client subbed
+    (note: the server MUST save the subscription even if the outpoint does not exist yet)
+  * funding/spending tx height changing from -1 to 0 as its inputs got mined
+  * funding/spending tx height changing from 0 to a (positive) block height when it gets mined
+  * note that reorgs can change any of the `status` fields and result in notifications
+  * note that mempool replacement (e.g. due to RBF) or mempool eviction (and potentially other
+    mempool quirks) can also change some of the `status` fields and hence result in notifications
+
+  The client MAY receive a notification even if the status did not change
+  (when e.g. there was a reorg changing the blockhash the tx is mined in but not the height).
+
+  The signature of the notification is
+
+    .. function:: blockchain.outpoint.subscribe(tx_hash, txout_idx, status)
+       :noindex:
+
+**Full JSON-RPC Example**
+
+Here is an example where the client sends a request, gets an immediate response,
+and then at some point later - while the connection is still open -
+receives a notification.
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "blockchain.outpoint.subscribe",
+    "params": ["1872b27abc497492a775fe335abfe368af575733144a7ecd4b249d8fd885b3cf", 1]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"height": 1866594},
+    "id": 4
+  }
+
+  # notification after broadcasting tx 4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09
+  <- {
+    "jsonrpc": "2.0",
+    "method": "blockchain.outpoint.subscribe",
+    "params": [
+      "1872b27abc497492a775fe335abfe368af575733144a7ecd4b249d8fd885b3cf",
+      1,
+      {
+        "height": 1866594,
+        "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
+        "spender_height": 0
+      }
+    ]
+  }
+
+
+blockchain.outpoint.get_status
+==============================
+
+Get the status of a transaction outpoint (TXO).
+Same as :func:`blockchain.outpoint.subscribe`, but without subscribing to future changes of status
+(i.e. no subsequent notifications).
+
+**Signature**
+
+  .. function:: blockchain.outpoint.get_status(tx_hash, txout_idx, spk_hint=None)
+  .. versionadded:: 1.7
+
+  (same as :func:`blockchain.outpoint.subscribe`)
+
+**Result**
+
+  (same as :func:`blockchain.outpoint.subscribe`)
+
+blockchain.outpoint.unsubscribe
+===============================
+
+Unsubscribe from a transaction outpoint (TXO), preventing future notifications
+if its `status` changes.
+
+**Signature**
+
+  .. function:: blockchain.outpoint.unsubscribe(tx_hash, txout_idx)
+  .. versionadded:: 1.7
+
+  *tx_hash*
+
+    The TXID of the funding transaction as a hexadecimal string.
+
+  *txout_idx*
+
+    The output index, a non-negative integer.
+
+**Result**
+
+  Returns :const:`True` if the outpoint was subscribed to, otherwise :const:`False`.
   Note that :const:`False` might be returned even for something subscribed to earlier,
   because the server can drop subscriptions in rare circumstances.
 
@@ -567,7 +777,7 @@ with the child being the last element in the array.
 
   *verbose*
 
-    Whether a verbose coin-specific response is required.
+    Whether the verbose bitcoind response is required.
 
 **Result**
 
@@ -661,6 +871,125 @@ When *verbose* is :const:`true` (exact structure depends on bitcoind impl and ve
     -> {"jsonrpc":"2.0","result":{"success":false,"errors":[{"txid":"c13d8d63284853d3417a150cfddcfc62d31cab4b311c9322cb43f979a518ac3a","error":"insufficient fee, rejecting replacement c13d8d63284853d3417a150cfddcfc62d31cab4b311c9322cb43f979a518ac3a, not enough additional fees to relay; 0.00000022 < 0.0000011"}]},"id":4}
 
 
+blockchain.transaction.testmempoolaccept
+========================================
+
+Returns result of mempool acceptance tests indicating if transaction(s) would be accepted by mempool.
+This checks if txs violate the consensus or policy rules.
+
+If multiple txs are passed in, parents must come before children and package policies apply:
+the transactions cannot conflict with any mempool txs or each other. However the txs do not
+necessarily need to be related to each other or form a "package".
+
+**Signature**
+
+  .. function:: blockchain.transaction.testmempoolaccept(raw_txs)
+  .. versionadded:: 1.7
+
+  *raw_txs*
+
+    An array of raw transactions, each as a hexadecimal string.
+    The maximum number of transactions allowed depends on the bitcoind version of the server,
+    but SHOULD be at least 25.
+
+**Result**
+
+  A json array containing the mempool acceptance test result (a dictionary) for each raw tx,
+  in the same order they were passed in.
+
+  Transactions that cannot be fully validated due to failures in other transactions will not contain an 'allowed' field.
+
+  The per-tx dict has the following keys:
+
+  * `txid` (always)
+      * Type: str
+      * Value: The transaction hash in hex
+  * `wtxid` (always)
+      * Type: str
+      * Value: The transaction witness hash in hex
+  * `allowed` (optional)
+      * Type: bool
+      * Value: Whether this tx would be accepted to the mempool.
+        If not present, the tx was not fully validated due to a failure in another tx in the list.
+  * `reason` (optional)
+      * Type: str
+      * Value: Rejection reason or error message describing why the tx would not be accepted into the mempool.
+        Only present if "allowed" is either false or missing, but even then its presence is optional.
+        This message is arbitrary free-from human-readable text, no guarantees re stability or contents at all.
+        This is only there to help debugging.
+
+**Result Example**
+
+Single tx, allowed::
+
+    [
+        {
+            'txid': 'f2f5f9e7a189d97367b4449705e0567408b4d2f3b6ee03119fa7bc7a96313bfc',
+            'wtxid': '9091e488dded52875f308f1305b1beec73cf0c646644c58c1a161170a33ce7e6',
+            'allowed': true
+        }
+    ]
+
+Two txs, allowed::
+
+    [
+        {
+            'txid': 'f2f5f9e7a189d97367b4449705e0567408b4d2f3b6ee03119fa7bc7a96313bfc',
+            'wtxid': '9091e488dded52875f308f1305b1beec73cf0c646644c58c1a161170a33ce7e6',
+            'allowed': true
+        },
+        {
+            'txid': '0b3e3cacd0be5156711eeff30c4124168b3be9890c297b1c02d47a66e2a6f61b',
+            'wtxid': '779a2ffd065ad5243b85c5d716815186607cf0195a604a8cd668ef2093986b4a',
+            'allowed': true
+        }
+    ]
+
+
+Single tx, rejected::
+
+    [
+        {
+            'txid': '9c42f84b2fcdaff676ba25d9d4941741cc0d1a01cce0c23fdc4c0b2afa38431c',
+            'wtxid': 'b3b1045327a9bd21850f07f639a784653c69d7d82b0341829cb8afcb2c0f881e',
+            'allowed': false,
+            'reason': 'missing-inputs'
+        }
+    ]
+
+Two txs, first tx would be okay, but second is not::
+
+    [
+        {
+            'txid': '5cd0bd7d93e1bbd8269563c1d081e893ed4efbd4bf74ad369ce8569e78928a3e',
+            'wtxid': 'ca0404678d8301cdbbcb96c619acc92b54b6fb82c6a9c4c1d6a2f9b0004d1559'},
+        {
+            'txid': 'd79a54959ac68c592687ac1c040f4b2ba223cb18f36552a42beaab776d6305ed',
+            'wtxid': '83996a7f65d8a52238b83d6123fe908ff98ab48db762d201dbf9efbbf67bd4cc',
+            'allowed': false,
+            'reason': 'min relay fee not met, 0 < 15'
+        }
+    ]
+
+Two txs, that already conflict with each other. This illustrates the "allowed" field might not be present in any item::
+
+    [
+        {
+            'txid': 'd79a54959ac68c592687ac1c040f4b2ba223cb18f36552a42beaab776d6305ed',
+            'wtxid': '83996a7f65d8a52238b83d6123fe908ff98ab48db762d201dbf9efbbf67bd4cc',
+            'reason': 'conflict-in-package'
+        },
+        {
+            'txid': '30aa0fb6174fcc6593235301aa7887227958952238f306131b4dbcab6af33c2f',
+            'wtxid': '7ff9fcbf25721c19b04468c5c2f218d950e3b6446e7e1a564fc01304d3c3e3f2',
+            'reason': 'conflict-in-package'
+        }
+    ]
+
+.. note:: The client implicitly trusts the server NOT to broadcast the txs.
+  Conversely, for the `blockchain.transaction.broadcast` RPC, the client trusts the server to DO broadcast the tx.
+
+
 blockchain.transaction.get
 ==========================
 
@@ -673,6 +1002,8 @@ Return a raw transaction.
      ignored argument *height* removed
   .. versionchanged:: 1.2
      *verbose* argument added
+  .. versionchanged:: 1.7
+     support of *verbose=true* made optional
 
   *tx_hash*
 
@@ -681,6 +1012,10 @@ Return a raw transaction.
   *verbose*
 
     Whether the verbose bitcoind response is required.
+    The server MUST support the verbose=false option (which is the default).
+    The server CAN decide not to support the verbose=true option, but if so,
+    it MUST indicate that in its :func:`server.features` response by setting
+    `method_flavours["blockchain.transaction.get"]["supports_verbose_true"]=false`.
 
 **Result**
 
@@ -749,7 +1084,10 @@ and height.
 
 **Signature**
 
-  .. function:: blockchain.transaction.get_merkle(tx_hash, height)
+  .. function:: blockchain.transaction.get_merkle(tx_hash, height=None)
+  .. versionchanged:: 1.7
+     *height* argument made optional (previously mandatory)
+     added *block_hash* field to result
 
   *tx_hash*
 
@@ -757,7 +1095,11 @@ and height.
 
   *height*
 
-    The height at which it was confirmed, an integer.
+    Optionally, the height at which it was confirmed, an integer.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.transaction.get_merkle"]["requires_height"]=true`.
 
 **Result**
 
@@ -765,7 +1107,11 @@ and height.
 
   * *block_height*
 
-    The height of the block the transaction was confirmed in.
+    The height of the block the transaction was confirmed in, an integer.
+
+  * *block_hash*
+
+    The hash of the block the transaction was confirmed in, as a hexadecimal string.
 
   * *merkle*
 
@@ -776,7 +1122,7 @@ and height.
   * *pos*
 
     The 0-based index of the position of the transaction in the
-    ordered list of transactions in the block.
+    ordered list of transactions in the block, an integer.
 
 **Result Example**
 
@@ -798,8 +1144,96 @@ and height.
       "2d64851151550e8c4d337f335ee28874401d55b358a66f1bafab2c3e9f48773d"
     ],
     "block_height": 450538,
+    "block_hash": "0000000000000000029bb9b476f1c66403a151f1da007470f8b9c1d9e4b9106d",
     "pos": 710
   }
+
+blockchain.transaction.get_merkle_witness
+=========================================
+
+Witness-SPV. Proves that a transaction with a given wtxid was mined in a particular block.
+
+**Signature**
+
+  .. function:: blockchain.transaction.get_merkle_witness(txid, height=None, cb=false)
+  .. versionadded:: 1.7
+
+  *txid*
+
+    The txid (NOT wtxid) as a hexadecimal string.
+
+  *height*
+
+    Optionally, the height at which it was confirmed, an integer.
+    The server (especially lighter ones such as EPS/BWT) might require this parameter
+    to be able to serve the request, in which case the server must indicate so in its
+    :func:`server.features` response, by setting
+    `method_flavours["blockchain.transaction.get_merkle"]["requires_height"]=true`.
+    (the flavour key `"blockchain.transaction.get_merkle"` is reused with the other merkle method).
+
+  *cb*
+
+    A boolean.
+    If set to :const:`true`, the result MUST also include the *cb_tx* and *cb_proof* fields.
+    If set to :const:`false`, those fields are omitted.
+
+**Result**
+
+  A dictionary with the following keys:
+
+  * *wtxid*
+
+    The wtxid of the mined transaction, as a hexadecimal string.
+
+  * *block_height*
+
+    The height of the block the transaction was confirmed in, an integer.
+
+  * *block_hash*
+
+    The hash of the block the transaction was confirmed in, as a hexadecimal string.
+
+  * *pos*
+
+    The 0-based index of the position of the transaction in the
+    ordered list of transactions in the block, an integer.
+
+  * *cb_tx*
+
+    The raw coinbase transaction from the block, as a hexadecimal string.
+
+  * *cb_proof*
+
+    Merkle branch to prove `cb_tx` (against block header merkle root).
+    A list of transaction hashes the current hash is paired with,
+    recursively, in order to trace up to obtain merkle root of the
+    block (in header), deepest pairing first.
+
+  * *wmerkle*
+
+    A witness merkle branch to prove `wtxid` (against `cb_tx`).
+    A list of hashes the current hash is paired with,
+    recursively, in order to trace up to obtain `witness root hash`
+    (committed to in the coinbase), deepest pairing first.
+    This field in the dict is present IFF the coinbase tx contains a witness commitment.
+    Note that even after segwit activation, if the block does not contain any segwit txs,
+    the witness commitment is optional.
+    Exactly one of the *wmerkle* and *merkle* keys are present.
+
+  * *merkle*
+
+    An old-style merkle branch to prove `txid` (against merkle root in block header).
+    Same format as in :func:`blockchain.transaction.get_merkle`.
+    This field in the dict is present IFF the coinbase tx does NOT contain a witness commitment.
+    Note that even after segwit activation, if the block does not contain any segwit txs,
+    the witness commitment is optional.
+    Exactly one of the *wmerkle* and *merkle* keys are present.
+
+**Result Example**
+
+::
+
+  TODO
 
 blockchain.transaction.id_from_pos
 ==================================
@@ -941,6 +1375,56 @@ Returns details on the active state of the TX memory pool.
   }
 
 
+mempool.recent
+==============
+
+Return a list of the last 10 transactions to enter the mempool, in arbitrary order.
+Each transaction object contains simplified overview data,
+with the following fields: txid, fee and vsize.
+
+**Signature**
+
+  .. function:: mempool.recent()
+  .. versionadded:: 1.7
+
+**Result**
+
+  An array of dictionaries, each with the following keys:
+
+    * `txid`
+        * Type: hex string
+        * Value: The transaction hash as a hexadecimal string.
+    * `fee`
+        * Type: integer
+        * Value: The fee paid by the transaction, in satoshis.
+    * `vsize`
+        * Type: integer
+        * Value: The virtual size of the transaction, in vbytes.
+
+.. note:: The server should do a best-effort attempt at including txs that just very recently
+  entered the mempool, however most-recent-ness is not guaranteed.
+
+.. note:: The result might contain fewer than 10 items if the mempool is close to empty.
+
+**Example Result**
+
+::
+
+  [
+      {
+          txid: "4b93c138293a7e3dfea6f0a63d944890b5ba571b03cc22d8c66995535e90dce8",
+          fee: 18277,
+          vsize: 2585
+      },
+      {
+          txid: "47182935123ae4e28d6a227a6076deaef222885d1d67e17e1ea02dd69013e5db",
+          fee: 877,
+          vsize: 143
+      },
+      ...
+  ]
+
+
 server.add_peer
 ===============
 
@@ -1013,6 +1497,9 @@ Return a list of features and services supported by the server.
 **Signature**
 
   .. function:: server.features()
+  .. versionchanged:: 1.7
+     added *method_flavours* field to result
+     removed *hash_function* field from result
 
 **Result**
 
@@ -1049,14 +1536,6 @@ Return a list of features and services supported by the server.
     The hash of the genesis block.  This is used to detect if a peer
     is connected to one serving a different network.
 
-  * *hash_function*
-
-    The hash function the server uses for :ref:`script hashing
-    <script hashes>`.  The client must use this function to hash
-    pay-to-scripts to produce script hashes to send to the server.
-    The default is "sha256".  "sha256" is currently the only
-    acceptable value.
-
   * *server_version*
 
     A string that identifies the server software.  Should be the same
@@ -1074,6 +1553,18 @@ Return a list of features and services supported by the server.
     there is no pruning limit.  Should be the same as what would
     suffix the letter ``p`` in the IRC real name.
 
+  * *method_flavours*
+
+    A dictionary that describes whether optional features of certain protocol methods
+    are supported by the server. The server might also require an otherwise optional
+    argument to be set by the client, that too should be clearly advertised here.
+    The keys are protocol method name strings, and the values are dictionaries
+    that are specific to the given protocol method.
+
+    If a server supports all functionality defined for the negotiated protocol version,
+    it can just set this to the empty dict (but the `method_flavours` key itself
+    must always be present).
+
 **Example Result**
 
 ::
@@ -1085,7 +1576,10 @@ Return a list of features and services supported by the server.
       "protocol_min": "1.0",
       "pruning": null,
       "server_version": "ElectrumX 1.0.17",
-      "hash_function": "sha256"
+      "method_flavours": {
+          "blockchain.outpoint.subscribe": {"requires_spk_hint": true},
+          "blockchain.transaction.get": {"supports_verbose_true": false}
+      }
   }
 
 
@@ -1120,18 +1614,112 @@ subscription and the server must send no notifications.
 server.ping
 ===========
 
-Ping the server to ensure it is responding, and to keep the session
+Ping the remote to ensure it is responding, and to keep the session
 alive.  The server may disconnect clients that have sent no requests
 for roughly 10 minutes.
 
+Besides keeping the TCP connection alive, this can also be used
+to obfuscate traffic patterns.
+
+This method can be sent either as a JSON-RPC "Request" or as a JSON-RPC "Notification".
+If sent as a notification, the receiver is expected not to respond.
+This is useful to mimic the traffic pattern of a "useful" notification.
+
+Unlike with other methods, these notifications are not sent as a consequence of prior
+subscriptions. We simply abuse the JSON-RPC "Notification" mechanism to allow
+sending an "unrequested" message that does not warrant a response.
+Both the client and the server MUST tolerate receiving this as an unrequested notification.
+
+  **Note** The client can send this method either as "Request" or as "Notification".
+  The server is only allowed to send it as "Notification".
+  There seems to be no useful traffic pattern that could be mimicked by allowing the server to send
+  this as a request (and getting the client to respond). If one arises, we could
+  relax this in a future version.
+  Allowing the client to send it as "Notification" can be useful as an alternative way
+  to pad its outgoing traffic, in case it does not have direct access to the lower-level
+  JSON-RPC stream to inject whitespaces.
+
 **Signature**
 
-  .. function:: server.ping()
+  .. function:: server.ping(pong_len=0, data="")
   .. versionadded:: 1.2
+  .. versionchanged:: 1.7
+     both parties are now allowed to send this
+     and significant changes to signature/fields
+
+  * *pong_len*
+
+    The number of hex characters the other party should send in the *data* part of the response.
+    A non-negative integer.
+
+  * *data*
+
+    A hexadecimal string (but can be odd-length). Its value is to be ignored by the recipient.
 
 **Result**
 
-  Returns :const:`null`.
+  A dictionary with the following keys:
+
+  * *data*
+
+    A hexadecimal string (but can be odd-length). Its value is to be ignored by the recipient.
+    However, the length MUST match the *pong_len* that was requested.
+
+**Notifications**
+
+    .. function:: server.ping(data="")
+       :noindex:
+
+    * *data*
+
+      See **Result** above.
+
+**Note** The *data* fields should support reasonably long strings, at least as long as
+would be needed to encode the largest consensus-valid transaction. No limits here
+would mean an easy DOS-vector and waste of bandwidth using *pong_len*. The client could
+already send or request transactions using other protocol methods, so limiting below that
+does not make sense.
+
+**Full JSON-RPC Examples**
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "server.ping",
+    "params": [0, "deadbeefdeadbeefdeadbeefdeadbeef"]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"data": ""},
+    "id": 4
+  }
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "server.ping",
+    "params": [5]
+  }
+  <- {
+    "jsonrpc": "2.0",
+    "result": {"data": "00000"},
+    "id": 4
+  }
+
+::
+
+  -> {
+    "jsonrpc": "2.0",
+    "method": "server.ping",
+    "params": ["deadbeefdeadbeefdeadbeefdeadbeef"]
+  }
+  (No response. This was a notification.)
+
+
 
 server.version
 ==============

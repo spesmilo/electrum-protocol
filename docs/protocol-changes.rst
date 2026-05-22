@@ -216,3 +216,54 @@ Removed methods
 
   * :func:`blockchain.relayfee` is removed. The `minrelaytxfee` field
     of the new :func:`mempool.get_info` RPC is a direct replacement.
+
+
+.. _version 1.7:
+
+Version 1.7
+===========
+
+Changes
+-------
+
+  * The `blockchain.scripthash.*` methods are all replaced with `blockchain.scriptpubkey.*`
+    methods. Note: `sha256(scriptPubKey) == scripthash`.
+  * For :func:`blockchain.transaction.get_merkle`, the previously required
+    *height* argument is now optional, and the result now includes a
+    *block_hash* field.
+  * Support for *cp_height* in :func:`blockchain.block.header` and
+    :func:`blockchain.block.headers` has been made optional.
+  * Support for :const:`verbose=true` in :func:`blockchain.transaction.get`
+    has been made optional.
+  * :func:`server.features` now has a new mandatory field, *method_flavours*,
+    which aims to provide some clarity re whether the server supports optional features.
+  * :func:`server.ping` can now also be sent as an unrequested notification, by both the client
+    and the server. The request/response signature also changed.
+  * Standardize "history too large" error code for `blockchain.scriptpubkey.*` methods.
+
+New methods
+-----------
+
+  * :func:`blockchain.scriptpubkey.get_balance`
+  * :func:`blockchain.scriptpubkey.get_history`
+  * :func:`blockchain.scriptpubkey.get_mempool`
+  * :func:`blockchain.scriptpubkey.listunspent`
+  * :func:`blockchain.scriptpubkey.subscribe`
+  * :func:`blockchain.scriptpubkey.unsubscribe`
+  * :func:`blockchain.outpoint.subscribe` to subscribe to a transaction
+    outpoint, and get a notification when it gets spent.
+  * :func:`blockchain.outpoint.unsubscribe` to unsubscribe from a TXO.
+  * :func:`blockchain.outpoint.get_status` to get current status of a TXO, without subscribing to changes.
+  * :func:`blockchain.transaction.get_merkle_witness` to SPV-prove wtxids.
+  * :func:`blockchain.transaction.testmempoolaccept`
+  * :func:`mempool.recent` to list a few of the latest txs just added to the mempool.
+
+Removed methods
+---------------
+
+  * :func:`blockchain.scripthash.get_balance`
+  * :func:`blockchain.scripthash.get_history`
+  * :func:`blockchain.scripthash.get_mempool`
+  * :func:`blockchain.scripthash.listunspent`
+  * :func:`blockchain.scripthash.subscribe`
+  * :func:`blockchain.scripthash.unsubscribe`
