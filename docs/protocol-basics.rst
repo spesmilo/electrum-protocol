@@ -108,7 +108,7 @@ the scripthash is defined as the reverse of that::
 
     8b01df4e368ea28f8dc0423bcf7a4923e3a12d307c875e47a0cfbf90b5c39161
 
-By subscribing to the scriptPubKey or the scripthash,
+By subscribing to the scriptPubKey (or the scripthash in older protocol versions),
 you can find P2PKH payments to that address.
 
 One public key, the genesis block public key, among the trillions for
@@ -130,7 +130,7 @@ the scripthash is defined as the reverse of that::
 
     740485f380ff6379d11ef6fe7d7cdd68aea7f8bd0d953d9fdf3531fb7d531833
 
-By subscribing to the scriptPubKey or the scripthash,
+By subscribing to the scriptPubKey (or the scripthash in older protocol versions),
 you can find P2PK payments to the genesis
 block public key.
 
@@ -320,7 +320,7 @@ and only add the padding into e.g. the last JSON-RPC message when emptying the b
   in the `Electrum client <https://github.com/spesmilo/electrum/pull/9875>`_
   and in the `electrumx server <https://github.com/spesmilo/electrumx/pull/301>`_:
 
-  Both the client and the server writes raw JSON-RPC protocol messages into a buffer,
+  Both the client and the server write raw JSON-RPC protocol messages into a buffer,
   which is then occasionally flushed to the wire. When it is flushed, padding is added
   to round up the total length to 1 KB, or to the next power of 2.
   The buffer is flushed if it reaches 1 KB, plus there is extra logic that periodically polls

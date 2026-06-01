@@ -553,8 +553,7 @@ as an input (spends it).
 
     .. note::  Full index servers might not need the parameter in practice
       but some lighter personal servers (such as EPS, BWT, Floresta)
-      would not be able to serve the request without it. A future protocol version might
-      add a feature flag where the server can signal whether it requires spk_hint.
+      would not be able to serve the request without it.
       Clients should always know the spk_hint in practice, so having to send it
       is not expected to kill any use case.
 
@@ -616,7 +615,7 @@ as an input (spends it).
   That is, any event that changes any field of the `status` dictionary results in a
   notification. Some examples:
 
-  * a funding/spending tx appearing in the mempool if there was no such tx when the client subbed
+  * a funding/spending tx appearing in the mempool if there was no such tx when the client subscribed
     (note: the server MUST save the subscription even if the outpoint does not exist yet)
   * funding/spending tx height changing from -1 to 0 as its inputs got mined
   * funding/spending tx height changing from 0 to a (positive) block height when it gets mined
