@@ -229,7 +229,12 @@ Changes
   * :func:`server.ping` can now also be sent as an unrequested notification, by both the client
     and the server. The request/response signature also changed.
   * The `blockchain.scripthash.*` methods are all replaced with `blockchain.scriptpubkey.*`
-    methods. Note: `sha256(scriptPubKey) == scripthash`.
+    methods. Note: `sha256(scriptPubKey) == scripthash`. Besides taking a scriptPubKey instead
+    of a scripthash as input param, the new methods also have some minor functional changes.
+      - the notifications for :func:`blockchain.scriptpubkey.subscribe` still contain the scripthash
+      - the protocol now guarantees that a notification is sent even if the `status` of the scriptPubKey
+        did not change but there was a reorg affecting a relevant tx
+      - many RPC results now contain the `chaintip` (and hence return dict instead of array)
   * The `hash_function` field is removed from the :func:`server.features` response.
   * Standardize "history too large" error code for `blockchain.scriptpubkey.*` methods.
 

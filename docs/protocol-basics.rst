@@ -224,6 +224,30 @@ those two txs are sorted by txid (`80` comes before `e0`).
 Finally, the status is `78e96c6562cafa71c115503b9411fdfdc595a45031e2ab76ff75162fe1b0590d`.
 
 
+.. _blockref:
+
+Block Ref
+---------
+
+To refer to a block in an unambiguous way, the blockhash can be used.
+However, it helps the client to also provide the corresponding height,
+otherwise the client might need to maintain some kind of blockhash->blockheight map,
+which (naively) for a million blocks might take ~50-100 MB of RAM (or disk space).
+
+To save some bandwidth, we can strip the leading zeroes (from the hex representation!)
+of the block hash. We only strip the zero hex characters from the low-entropy end,
+and as the length of the full blockhash is a known constant, this leaves the compressed
+representation unambiguous.
+
+The `blockref` is a `(block_height, compressed_blockhash)` pair, serialized as a json array.
+`block_height` is an integer, the corresponding height for `compressed_blockhash`.
+`compressed_blockhash` is a hex string (but can be odd-length).
+
+Example from Bitcoin mainnet::
+
+    [600000, "7316856900e76b4f7a9139cfbfba89842c8d196cd5f91"]
+
+
 Block Headers
 -------------
 

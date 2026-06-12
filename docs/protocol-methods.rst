@@ -269,11 +269,21 @@ Return the confirmed and unconfirmed balances of a :ref:`scriptPubKey <scriptpub
 
 **Result**
 
-  A dictionary with keys `confirmed` and `unconfirmed`.  The value of
-  each is the appropriate balance in minimum coin units (satoshis).
-  The `confirmed` balance is the sum of UTXO values at the current chaintip.
-  The value for `unconfirmed` is the mempool delta (compared to `confirmed`),
-  so note that it can also be negative.
+  A dictionary with the following keys:
+
+  * *confirmed*
+
+    The confirmed balance, ignoring mempool events. An integer, in minimum coin units (satoshis).
+    The sum of UTXO values at the current chaintip.
+
+  * *unconfirmed*
+
+    The mempool delta (compared to `confirmed`). An integer, in minimum coin units (satoshis).
+    Note that it can also be negative.
+
+  * *chaintip*
+
+    A :ref:`blockref <blockref>` for the current chaintip (latest block in most work chain).
 
 **Result Example**
 
@@ -281,7 +291,8 @@ Return the confirmed and unconfirmed balances of a :ref:`scriptPubKey <scriptpub
 
   {
     "confirmed": 103873966,
-    "unconfirmed": 23684400
+    "unconfirmed": 23684400,
+    "chaintip": [951234, "a3e3f7037123b11b4dac1ff08ad2732dba903a03623f"]
   }
 
 blockchain.scriptpubkey.get_history
@@ -300,21 +311,29 @@ Return the confirmed and unconfirmed history of a :ref:`scriptPubKey <scriptpubk
 
 **Result**
 
-  A list of confirmed transactions in blockchain order, with the
-  output of :func:`blockchain.scriptpubkey.get_mempool` appended to the
-  list.  Each confirmed transaction is a dictionary with the following
-  keys:
+  A dictionary, always containing the following two keys:
 
-  * *height*
+  * *chaintip*
 
-    The integer height of the block the transaction was confirmed in.
+    A :ref:`blockref <blockref>` for the current chaintip (latest block in most work chain).
 
-  * *tx_hash*
+  * *history*
 
-    The transaction hash in hexadecimal.
+    A list of confirmed transactions in blockchain order, with the corresponding
+    output of :func:`blockchain.scriptpubkey.get_mempool` (its `history` value) appended to the
+    list.  Each confirmed transaction is a dictionary with the following
+    keys:
 
-  See :func:`blockchain.scriptpubkey.get_mempool` for how mempool
-  transactions are returned.
+    * *height*
+
+      The integer height of the block the transaction was confirmed in.
+
+    * *tx_hash*
+
+      The transaction hash in hexadecimal.
+
+    See :func:`blockchain.scriptpubkey.get_mempool` for how mempool
+    transactions are returned.
 
   If the history of the scriptPubKey is too long (busy address, touched by thousands of txs),
   and so the server refuses to serve it, it SHOULD send a JSON-RPC error with integer code `10001`
@@ -324,26 +343,32 @@ Return the confirmed and unconfirmed history of a :ref:`scriptPubKey <scriptpubk
 
 ::
 
-  [
-    {
-      "height": 200004,
-      "tx_hash": "acc3758bd2a26f869fcc67d48ff30b96464d476bca82c1cd6656e7d506816412"
-    },
-    {
-      "height": 215008,
-      "tx_hash": "f3e1bf48975b8d6060a9de8884296abb80be618dc00ae3cb2f6cee3085e09403"
-    }
-  ]
+  {
+    "history": [
+      {
+        "height": 200004,
+        "tx_hash": "acc3758bd2a26f869fcc67d48ff30b96464d476bca82c1cd6656e7d506816412"
+      },
+      {
+        "height": 215008,
+        "tx_hash": "f3e1bf48975b8d6060a9de8884296abb80be618dc00ae3cb2f6cee3085e09403"
+      }
+    ],
+    "chaintip": [951234, "a3e3f7037123b11b4dac1ff08ad2732dba903a03623f"]
+  }
 
 ::
 
-  [
-    {
-      "fee": 20000,
-      "height": 0,
-      "tx_hash": "9fbed79a1e970343fcd39f4a2d830a6bde6de0754ed2da70f489d0303ed558ec"
-    }
-  ]
+  {
+    "history": [
+      {
+        "fee": 20000,
+        "height": 0,
+        "tx_hash": "9fbed79a1e970343fcd39f4a2d830a6bde6de0754ed2da70f489d0303ed558ec"
+      }
+    ],
+    "chaintip": [951234, "a3e3f7037123b11b4dac1ff08ad2732dba903a03623f"]
+  }
 
 blockchain.scriptpubkey.get_mempool
 ===================================
@@ -361,33 +386,44 @@ Return the unconfirmed transactions of a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Result**
 
-  A list of mempool transactions. The order is the same as when computing the
-  :ref:`status <status>` of the scriptPubKey.
-  Each mempool transaction is a dictionary with the following keys:
+  A dictionary, always containing the following two keys:
 
-  * *height*
+  * *chaintip*
 
-    ``0`` if all inputs are confirmed, and ``-1`` otherwise.
+    A :ref:`blockref <blockref>` for the current chaintip (latest block in most work chain).
 
-  * *tx_hash*
+  * *history*
 
-    The transaction hash in hexadecimal.
+    A list of mempool transactions. The order is the same as when computing the
+    :ref:`status <status>` of the scriptPubKey.
+    Each mempool transaction is a dictionary with the following keys:
 
-  * *fee*
+    * *height*
 
-    The transaction fee in minimum coin units (satoshis).
+      ``0`` if all inputs are confirmed, and ``-1`` otherwise.
+
+    * *tx_hash*
+
+      The transaction hash in hexadecimal.
+
+    * *fee*
+
+      The transaction fee in minimum coin units (satoshis).
 
 **Result Example**
 
 ::
 
-  [
-    {
-      "tx_hash": "45381031132c57b2ff1cbe8d8d3920cf9ed25efd9a0beb764bdb2f24c7d1c7e3",
-      "height": 0,
-      "fee": 24310
-    }
-  ]
+  {
+    "history": [
+      {
+        "tx_hash": "45381031132c57b2ff1cbe8d8d3920cf9ed25efd9a0beb764bdb2f24c7d1c7e3",
+        "height": 0,
+        "fee": 24310
+      }
+    ],
+    "chaintip": [951234, "a3e3f7037123b11b4dac1ff08ad2732dba903a03623f"]
+  }
 
 
 blockchain.scriptpubkey.listunspent
@@ -406,29 +442,37 @@ Return an ordered list of UTXOs sent to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 **Result**
 
-  A list of unspent outputs in blockchain order.  This function takes
-  the mempool into account.  Mempool transactions paying to the
-  address are included at the end of the list in an undefined order.
-  Any output that is spent in the mempool does not appear.  Each
-  output is a dictionary with the following keys:
+  A dictionary, always containing the following two keys:
 
-  * *height*
+  * *chaintip*
 
-    The integer height of the block the transaction was confirmed in.
-    ``0`` if the transaction is in the mempool.
+    A :ref:`blockref <blockref>` for the current chaintip (latest block in most work chain).
 
-  * *tx_pos*
+  * *utxos*
 
-    The zero-based index of the output in the transaction's list of
-    outputs.
+    A list of unspent outputs in blockchain order.  This function takes
+    the mempool into account.  Mempool transactions paying to the
+    address are included at the end of the list in an undefined order.
+    Any output that is spent in the mempool does not appear.  Each
+    output is a dictionary with the following keys:
 
-  * *tx_hash*
+    * *height*
 
-    The output's transaction hash as a hexadecimal string.
+      The integer height of the block the transaction was confirmed in.
+      ``0`` if the transaction is in the mempool.
 
-  * *value*
+    * *tx_pos*
 
-    The output's value in minimum coin units (satoshis).
+      The zero-based index of the output in the transaction's list of
+      outputs.
+
+    * *tx_hash*
+
+      The output's transaction hash as a hexadecimal string.
+
+    * *value*
+
+      The output's value in minimum coin units (satoshis).
 
 
 **Warning**
@@ -446,20 +490,23 @@ Return an ordered list of UTXOs sent to a :ref:`scriptPubKey <scriptpubkeys>`.
 
 ::
 
-  [
-    {
-      "tx_pos": 0,
-      "value": 45318048,
-      "tx_hash": "9f2c45a12db0144909b5db269415f7319179105982ac70ed80d76ea79d923ebf",
-      "height": 437146
-    },
-    {
-      "tx_pos": 0,
-      "value": 919195,
-      "tx_hash": "3d2290c93436a3e964cfc2f0950174d8847b1fbe3946432c4784e168da0f019f",
-      "height": 441696
-    }
-  ]
+  {
+    "utxos": [
+      {
+        "tx_pos": 0,
+        "value": 45318048,
+        "tx_hash": "9f2c45a12db0144909b5db269415f7319179105982ac70ed80d76ea79d923ebf",
+        "height": 437146
+      },
+      {
+        "tx_pos": 0,
+        "value": 919195,
+        "tx_hash": "3d2290c93436a3e964cfc2f0950174d8847b1fbe3946432c4784e168da0f019f",
+        "height": 441696
+      }
+    ],
+    "chaintip": [951234, "a3e3f7037123b11b4dac1ff08ad2732dba903a03623f"]
+  }
 
 .. _subscribed:
 
@@ -488,7 +535,13 @@ Subscribe to a :ref:`scriptPubKey <scriptpubkeys>`.
 **Notifications**
 
   The client will receive a notification when the :ref:`status <status>` of the
-  scriptPubKey changes. Importantly, the notifications use :ref:`script hash <script hashes>`
+  scriptPubKey changes.
+
+  The client MAY receive a notification even if the status did not change.
+  One such example is a reorg changing the blockhash, but not the height, a relevant tx is mined in,
+  in which case the client MUST get a notification.
+
+  Importantly, the notifications use :ref:`script hash <script hashes>`
   instead of scriptPubKey. The scripthash corresponds to the scriptPubKey from the
   original request.
   The client is expected to maintain a mapping scripthash->scriptpubkey, or similar,
@@ -497,6 +550,7 @@ Subscribe to a :ref:`scriptPubKey <scriptpubkeys>`.
   to the original request (which can be up to 10 KB in size, as per Bitcoin consensus),
   only the scripthash (which is fixed size). Also, this limits upstream bandwidth usage
   of servers.
+
   The signature is
 
     .. function:: blockchain.scriptpubkey.subscribe(scripthash, status)
@@ -565,8 +619,13 @@ as an input (spends it).
 
 **Result**
 
-  The status of the TXO, taking the mempool into consideration.
-  The output is a dictionary, containing 0, 1, or 3 of the following items:
+  The status of the TXO (taking the mempool into consideration).
+  The output is a dictionary, containing some of the following items:
+
+  * *chaintip*
+
+    A :ref:`blockref <blockref>` for the current chaintip (latest block in most work chain).
+    This key is always present.
 
   * *funder_height*
 
@@ -593,17 +652,21 @@ as an input (spends it).
 
 ::
 
-  {}
+  {
+    "chaintip": [1866590, "985ea6ada82aa9f71b11f7b57a8c87e36e6c98e92b9820c4ca"]
+  }
 
 ::
 
   {
+    "chaintip": [1866810, "5495aad5ec6518a1b8b904a22087753d0d43fa3e416c18c87e"],
     "funder_height": 1866594
   }
 
 ::
 
   {
+    "chaintip": [1866810, "5495aad5ec6518a1b8b904a22087753d0d43fa3e416c18c87e"],
     "funder_height": 1866594,
     "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
     "spender_height": 0
@@ -611,9 +674,10 @@ as an input (spends it).
 
 **Notifications**
 
-  The client will receive a notification when the `status` of the outpoint changes.
-  That is, any event that changes any field of the `status` dictionary results in a
-  notification. Some examples:
+  The client will receive a notification when the `status` of the outpoint changes, disregarding
+  changes to the `chaintip` item.
+  That is, any event that changes any field of the `status` dictionary (except the `chaintip` field)
+  results in a notification. Some examples:
 
   * a funding/spending tx appearing in the mempool if there was no such tx when the client subscribed
     (note: the server MUST save the subscription even if the outpoint does not exist yet)
@@ -623,8 +687,9 @@ as an input (spends it).
   * note that mempool replacement (e.g. due to RBF) or mempool eviction (and potentially other
     mempool quirks) can also change some of the `status` fields and hence result in notifications
 
-  The client MAY receive a notification even if the status did not change
-  (when e.g. there was a reorg changing the blockhash the tx is mined in but not the height).
+  The client MAY receive a notification even if the status did not change.
+  One such example is a reorg changing the blockhash, but not the height, a relevant tx is mined in,
+  in which case the client MUST get a notification.
 
   The signature of the notification is
 
@@ -647,7 +712,10 @@ receives a notification.
   }
   <- {
     "jsonrpc": "2.0",
-    "result": {"funder_height": 1866594},
+    "result": {
+      "chaintip": [1866810, "5495aad5ec6518a1b8b904a22087753d0d43fa3e416c18c87e"],
+      "funder_height": 1866594,
+    },
     "id": 4
   }
 
@@ -659,6 +727,7 @@ receives a notification.
       "1872b27abc497492a775fe335abfe368af575733144a7ecd4b249d8fd885b3cf",
       1,
       {
+        "chaintip": [1866810, "5495aad5ec6518a1b8b904a22087753d0d43fa3e416c18c87e"],
         "funder_height": 1866594,
         "spender_txhash": "4a19a360f71814c566977114c49ccfeb8a7e4719eda26cee27fa504f3f02ca09",
         "spender_height": 0
