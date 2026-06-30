@@ -615,7 +615,8 @@ as an input (spends it).
   where the spending transaction is already deeply mined at a reorg-safe height (typically
   100+ blocks deep).
   Similarly, the server MAY ignore new subscription requests if the spending tx is already
-  mined at a reorg-safe height but it still MUST send at least one full response.
+  mined at a reorg-safe height but it still MUST send the full response to the subscription request
+  (just not the subsequent notifications - which likely would never trigger anyway without a deep reorg).
 
 **Result**
 
