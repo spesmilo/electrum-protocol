@@ -350,6 +350,269 @@ This feerate does not guarantee acceptance into the mempool of the server.
    0.0
 
 
+blockchain.scripthash.get_balance
+=================================
+
+Return the confirmed and unconfirmed balances of a :ref:`script hash
+<script hashes>`.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.get_balance(scripthash)
+  .. versionadded:: 1.1
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  A dictionary with keys `confirmed` and `unconfirmed`.  The value of
+  each is the appropriate balance in minimum coin units (satoshis).
+  The `confirmed` balance is the sum of UTXO values at the current chaintip.
+  The value for `unconfirmed` is the mempool delta (compared to `confirmed`),
+  so note that it can also be negative.
+
+**Result Example**
+
+::
+
+  {
+    "confirmed": 103873966,
+    "unconfirmed": 23684400
+  }
+
+blockchain.scripthash.get_history
+=================================
+
+Return the confirmed and unconfirmed history of a :ref:`script hash
+<script hashes>`.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.get_history(scripthash)
+  .. versionadded:: 1.1
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  A list of confirmed transactions in blockchain order, with the
+  output of :func:`blockchain.scripthash.get_mempool` appended to the
+  list.  Each confirmed transaction is a dictionary with the following
+  keys:
+
+  * *height*
+
+    The integer height of the block the transaction was confirmed in.
+
+  * *tx_hash*
+
+    The transaction hash in hexadecimal.
+
+  See :func:`blockchain.scripthash.get_mempool` for how mempool
+  transactions are returned.
+
+**Result Examples**
+
+::
+
+  [
+    {
+      "height": 200004,
+      "tx_hash": "acc3758bd2a26f869fcc67d48ff30b96464d476bca82c1cd6656e7d506816412"
+    },
+    {
+      "height": 215008,
+      "tx_hash": "f3e1bf48975b8d6060a9de8884296abb80be618dc00ae3cb2f6cee3085e09403"
+    }
+  ]
+
+::
+
+  [
+    {
+      "fee": 20000,
+      "height": 0,
+      "tx_hash": "9fbed79a1e970343fcd39f4a2d830a6bde6de0754ed2da70f489d0303ed558ec"
+    }
+  ]
+
+blockchain.scripthash.get_mempool
+=================================
+
+Return the unconfirmed transactions of a :ref:`script hash <script
+hashes>`.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.get_mempool(scripthash)
+  .. versionadded:: 1.1
+  .. versionchanged:: 1.6
+     results must be sorted (previously undefined order)
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  A list of mempool transactions. The order is the same as when computing the
+  :ref:`status <status>` of the script hash.
+  Each mempool transaction is a dictionary with the following keys:
+
+  * *height*
+
+    ``0`` if all inputs are confirmed, and ``-1`` otherwise.
+
+  * *tx_hash*
+
+    The transaction hash in hexadecimal.
+
+  * *fee*
+
+    The transaction fee in minimum coin units (satoshis).
+
+**Result Example**
+
+::
+
+  [
+    {
+      "tx_hash": "45381031132c57b2ff1cbe8d8d3920cf9ed25efd9a0beb764bdb2f24c7d1c7e3",
+      "height": 0,
+      "fee": 24310
+    }
+  ]
+
+
+blockchain.scripthash.listunspent
+=================================
+
+Return an ordered list of UTXOs sent to a script hash.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.listunspent(scripthash)
+  .. versionadded:: 1.1
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  A list of unspent outputs in blockchain order.  This function takes
+  the mempool into account.  Mempool transactions paying to the
+  address are included at the end of the list in an undefined order.
+  Any output that is spent in the mempool does not appear.  Each
+  output is a dictionary with the following keys:
+
+  * *height*
+
+    The integer height of the block the transaction was confirmed in.
+    ``0`` if the transaction is in the mempool.
+
+  * *tx_pos*
+
+    The zero-based index of the output in the transaction's list of
+    outputs.
+
+  * *tx_hash*
+
+    The output's transaction hash as a hexadecimal string.
+
+  * *value*
+
+    The output's value in minimum coin units (satoshis).
+
+
+**Warning**
+
+  In the case of pre-segwit legacy UTXOs, the satoshi value claimed by a server should be
+  verified by the client by requesting the full funding transaction and parsing it
+  to look for the output amount corresponding to ``tx_hash:tx_pos``.
+  This is necessary as the pre-segwit legacy sighash does not commit to the input amount, so
+  the server could try to trick a client into burning their coins as fees.
+  Note that it is not necessary to SPV-verify ``tx_hash``, as the sighash commits to the txid,
+  and the txid commits to the raw tx, from which we read out the satoshi amount.
+
+
+**Result Example**
+
+::
+
+  [
+    {
+      "tx_pos": 0,
+      "value": 45318048,
+      "tx_hash": "9f2c45a12db0144909b5db269415f7319179105982ac70ed80d76ea79d923ebf",
+      "height": 437146
+    },
+    {
+      "tx_pos": 0,
+      "value": 919195,
+      "tx_hash": "3d2290c93436a3e964cfc2f0950174d8847b1fbe3946432c4784e168da0f019f",
+      "height": 441696
+    }
+  ]
+
+blockchain.scripthash.subscribe
+===============================
+
+Subscribe to a script hash.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.subscribe(scripthash)
+  .. versionadded:: 1.1
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  The :ref:`status <status>` of the script hash.
+
+**Notifications**
+
+  The client will receive a notification when the :ref:`status <status>` of the script
+  hash changes.  Its signature is
+
+    .. function:: blockchain.scripthash.subscribe(scripthash, status)
+       :noindex:
+
+blockchain.scripthash.unsubscribe
+=================================
+
+Unsubscribe from a script hash, preventing future notifications if its :ref:`status
+<status>` changes.
+
+**Signature**
+
+  .. function:: blockchain.scripthash.unsubscribe(scripthash)
+  .. versionadded:: 1.4.2
+  .. deprecated:: removed in version 1.7
+
+  *scripthash*
+
+    The script hash as a hexadecimal string.
+
+**Result**
+
+  Returns :const:`True` if the scripthash was subscribed to, otherwise :const:`False`.
+  Note that :const:`False` might be returned even for something subscribed to earlier,
+  because the server can drop subscriptions in rare circumstances.
+
+
 server.version
 ==============
 

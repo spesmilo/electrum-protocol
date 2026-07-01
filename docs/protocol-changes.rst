@@ -216,3 +216,50 @@ Removed methods
 
   * :func:`blockchain.relayfee` is removed. The `minrelaytxfee` field
     of the new :func:`mempool.get_info` RPC is a direct replacement.
+
+
+.. _version 1.7:
+
+Version 1.7
+===========
+
+Changes
+-------
+
+  * :func:`server.ping` can now also be sent as an unrequested notification, by both the client
+    and the server. The request/response signature also changed.
+  * The `blockchain.scripthash.*` methods are all replaced with `blockchain.scriptpubkey.*`
+    methods. Note: `sha256(scriptPubKey) == scripthash`. Besides taking a scriptPubKey instead
+    of a scripthash as input param, the new methods also have some minor functional changes.
+      - the notifications for :func:`blockchain.scriptpubkey.subscribe` still contain the scripthash
+      - the protocol now guarantees that a notification is sent even if the `status` of the scriptPubKey
+        did not change but there was a reorg affecting a relevant tx
+      - many RPC results now contain the `chaintip` (and hence return dict instead of array)
+  * The `hash_function` field is removed from the :func:`server.features` response.
+  * Standardize "history too large" error code for `blockchain.scriptpubkey.*` methods.
+
+New methods
+-----------
+
+  * :func:`blockchain.scriptpubkey.get_balance`
+  * :func:`blockchain.scriptpubkey.get_history`
+  * :func:`blockchain.scriptpubkey.get_mempool`
+  * :func:`blockchain.scriptpubkey.listunspent`
+  * :func:`blockchain.scriptpubkey.subscribe`
+  * :func:`blockchain.scriptpubkey.unsubscribe`
+  * :func:`blockchain.outpoint.subscribe` to subscribe to a transaction
+    outpoint, and get a notification when it gets spent.
+  * :func:`blockchain.outpoint.unsubscribe` to unsubscribe from a TXO.
+  * :func:`blockchain.outpoint.get_status` to get current status of a TXO, without subscribing to changes.
+  * :func:`blockchain.transaction.testmempoolaccept`
+  * :func:`mempool.recent` to list a few of the latest txs just added to the mempool.
+
+Removed methods
+---------------
+
+  * :func:`blockchain.scripthash.get_balance`
+  * :func:`blockchain.scripthash.get_history`
+  * :func:`blockchain.scripthash.get_mempool`
+  * :func:`blockchain.scripthash.listunspent`
+  * :func:`blockchain.scripthash.subscribe`
+  * :func:`blockchain.scripthash.unsubscribe`
