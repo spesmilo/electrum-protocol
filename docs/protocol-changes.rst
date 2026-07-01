@@ -234,7 +234,7 @@ Changes
       - the notifications for :func:`blockchain.scriptpubkey.subscribe` still contain the scripthash
       - the protocol now guarantees that a notification is sent even if the `status` of the scriptPubKey
         did not change but there was a reorg affecting a relevant tx
-      - many RPC results now contain the `chaintip` (and hence return dict instead of array)
+      - many RPCs now return a dict instead of an array
   * The `hash_function` field is removed from the :func:`server.features` response.
   * Standardize "history too large" error code for `blockchain.scriptpubkey.*` methods.
 
