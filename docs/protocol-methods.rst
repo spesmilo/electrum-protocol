@@ -1470,8 +1470,9 @@ Return a list of features and services supported by the server.
   * *pruning*
 
     An integer, the pruning limit.  Omit or set to :const:`null` if
-    there is no pruning limit.  Should be the same as what would
-    suffix the letter ``p`` in the IRC real name.
+    there is no pruning limit.
+
+.. note:: *pruning* indicates how many spent transaction-history entries per address the server may retain.  It is not related to bitcoind's block pruning.
 
 **Example Result**
 
